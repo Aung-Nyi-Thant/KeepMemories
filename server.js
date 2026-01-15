@@ -200,6 +200,12 @@ app.get('/api/data/:userId', authenticate, (req, res) => {
         db.spaces[spaceId].pet = { ...INITIAL_PET };
         saveDB();
     }
+
+    // Sunflower Migration
+    if (!db.spaces[spaceId].sunflower) {
+        db.spaces[spaceId].sunflower = { ...INITIAL_SUNFLOWER };
+        saveDB();
+    }
     const spaceData = db.spaces[spaceId];
 
     // Also fetch partner username if exists
@@ -228,9 +234,9 @@ app.post('/api/data/:userId', authenticate, (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const spaceId = user.spaceId;
-    if (!db.spaces[spaceId]) db.spaces[spaceId] = { notes: [], images: [], dates: [], pet: { ...INITIAL_PET } };
+    if (!db.spaces[spaceId]) db.spaces[spaceId] = { notes: [], images: [], dates: [], pet: { ...INITIAL_PET }, sunflower: { ...INITIAL_SUNFLOWER } };
 
-    if (['notes', 'images', 'dates', 'pet'].includes(type)) {
+    if (['notes', 'images', 'dates', 'pet', 'sunflower'].includes(type)) {
         if (type === 'pet') {
             console.log(`[POST] Saving pet data for user ${userId}:`, payload);
         }

@@ -107,7 +107,7 @@ function renderSunflower() {
     stageText.textContent = stage;
 
     if (isImage) {
-        visual.innerHTML = `<img src="sunflower_bloomed.png" alt="Sunflower" class="sunflower-image">`;
+        visual.innerHTML = `<img src="sunflower.png" alt="Sunflower" class="sunflower-image">`;
     } else {
         visual.innerHTML = emoji;
         visual.style.fontSize = "8rem";
@@ -117,13 +117,22 @@ function renderSunflower() {
 function interact(action) {
     if (!localData.sunflower) return;
     const s = localData.sunflower;
+    const visual = document.getElementById('sunflowerVisual');
 
     if (action === 'water') {
         s.exp += 25;
         showAnimation('💧');
+        if (visual) {
+            visual.classList.add('sway');
+            setTimeout(() => visual.classList.remove('sway'), 1000);
+        }
     } else if (action === 'fertilize') {
         s.exp += 50;
         showAnimation('🧪');
+        if (visual) {
+            visual.classList.add('glow');
+            setTimeout(() => visual.classList.remove('glow'), 1000);
+        }
     }
 
     checkLevelUp();

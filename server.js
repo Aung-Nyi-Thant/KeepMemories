@@ -37,6 +37,9 @@ function saveDB() {
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 }
 
+// --- CONSTANTS ---
+const INITIAL_PET = { name: "Lovebug", level: 3, exp: 0, mood: "Happy", lastFed: 0 };
+
 // --- HELPER FUNCTIONS ---
 function generateId() {
     return Math.random().toString(36).substr(2, 6).toUpperCase();
@@ -52,9 +55,20 @@ function authenticate(req, res, next) {
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) return res.status(403).json({ error: "Invalid Token" });
         req.user = user; // { userId: ... }
+
+        // Track Activity
+        if (db.users[user.userId]) {
+            db.users[user.userId].lastActive = Date.now();
+            // Don't saveDB() on every request for performance, 
+            // but for this scale it's fine or we can debounce.
+            // Let's save periodically or just here for simplicity.
+            saveDB();
+        }
+
         next();
     });
 }
+
 
 // --- API ENDPOINTS ---
 
@@ -78,16 +92,27 @@ app.post('/api/register', async (req, res) => {
     // HASH PASSWORD
     const passwordHash = await bcrypt.hash(password, 10);
 
+    const isAdmin = (username.toLowerCase() === 'admin');
+
     db.users[userId] = {
         id: userId,
         username,
         passwordHash, // Store hash, not plain text
         spaceId,
-        partnerId: null
+        partnerId: null,
+        createdAt: Date.now(),
+        lastActive: Date.now(),
+        isAdmin: isAdmin
     };
 
+
     // Create default space
-    db.spaces[spaceId] = { notes: [], images: [], dates: [] };
+    db.spaces[spaceId] = {
+        notes: [],
+        images: [],
+        dates: [],
+        pet: { ...INITIAL_PET }
+    };
 
     saveDB();
 
@@ -134,6 +159,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
             userId: user.id,
             username: user.username,
             partnerId: user.partnerId,
+            isAdmin: !!user.isAdmin,
             token: token
         });
     } else {
@@ -156,12 +182,23 @@ app.get('/api/data/:userId', authenticate, (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const spaceId = user.spaceId;
-    const spaceData = db.spaces[spaceId] || { notes: [], images: [], dates: [] };
+    if (!db.spaces[spaceId]) {
+        db.spaces[spaceId] = { notes: [], images: [], dates: [], pet: { ...INITIAL_PET } };
+    } else if (!db.spaces[spaceId].pet) {
+        // Migration/Repair: If space exists but pet is missing
+        db.spaces[spaceId].pet = { ...INITIAL_PET };
+        saveDB();
+    }
+    const spaceData = db.spaces[spaceId];
 
     // Also fetch partner username if exists
     let partnerName = null;
     if (user.partnerId) {
         partnerName = db.users[user.partnerId]?.username;
+    }
+
+    if (spaceData.pet) {
+        console.log(`[GET] Pet data loaded for user ${userId}: Level ${spaceData.pet.level}, Exp ${spaceData.pet.exp}`);
     }
 
     res.json({
@@ -181,9 +218,12 @@ app.post('/api/data/:userId', authenticate, (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const spaceId = user.spaceId;
-    if (!db.spaces[spaceId]) db.spaces[spaceId] = { notes: [], images: [], dates: [] };
+    if (!db.spaces[spaceId]) db.spaces[spaceId] = { notes: [], images: [], dates: [], pet: { ...INITIAL_PET } };
 
-    if (['notes', 'images', 'dates'].includes(type)) {
+    if (['notes', 'images', 'dates', 'pet'].includes(type)) {
+        if (type === 'pet') {
+            console.log(`[POST] Saving pet data for user ${userId}:`, payload);
+        }
         db.spaces[spaceId][type] = payload;
         saveDB();
         res.json({ success: true });
@@ -305,7 +345,12 @@ app.post('/api/disconnect', (req, res) => {
 
     // Ensure that space exists (it should, but just in case)
     if (!db.spaces[currentUser.spaceId]) {
-        db.spaces[currentUser.spaceId] = { notes: [], images: [], dates: [] };
+        db.spaces[currentUser.spaceId] = {
+            notes: [],
+            images: [],
+            dates: [],
+            pet: { ...INITIAL_PET }
+        };
     }
 
     // Reset Partner User (if they exist)
@@ -314,7 +359,12 @@ app.post('/api/disconnect', (req, res) => {
         partnerUser.spaceId = `SPACE_${partnerId}`; // Return them to their personal space
 
         if (!db.spaces[partnerUser.spaceId]) {
-            db.spaces[partnerUser.spaceId] = { notes: [], images: [], dates: [] };
+            db.spaces[partnerUser.spaceId] = {
+                notes: [],
+                images: [],
+                dates: [],
+                pet: { ...INITIAL_PET }
+            };
         }
     }
 
@@ -326,6 +376,25 @@ app.post('/api/disconnect', (req, res) => {
         console.error("Error saving DB:", err);
         res.status(500).json({ error: "Internal Server Error" });
     }
+});
+
+// 7. ADMIN DASHBOARD
+app.get('/api/admin/users', authenticate, (req, res) => {
+    const requestUser = db.users[req.user.userId];
+
+    if (!requestUser || !requestUser.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const userList = Object.values(db.users).map(u => ({
+        id: u.id,
+        username: u.username,
+        createdAt: u.createdAt || 0, // Handle legacy users
+        lastActive: u.lastActive || 0,
+        isAdmin: !!u.isAdmin
+    }));
+
+    res.json({ success: true, users: userList });
 });
 
 // Start Server

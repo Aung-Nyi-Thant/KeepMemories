@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="strawberry">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeepMemories - Our Pet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="pet-page-body">
+    <div class="pet-page-container">
+        <header class="pet-header">
+            <a href="home.html" class="back-btn">⬅ Back to Home</a>
+            <h1>Our Doghouse 🏠</h1>
+        </header>
+
+        <main class="pet-stage">
+            <div class="sky-background">
+            </div>
+
+            <div class="dog-container">
+                <div id="dogAvatar" class="dog-avatar">🐶</div>
+                <div class="dog-shadow"></div>
+            </div>
+
+            <div class="pet-stats-panel">
+                <div class="pet-identity">
+                    <h2 id="petName" onclick="renamePet()">Doggy</h2>
+                    <span class="level-badge">Lvl <span id="petLevel">1</span></span>
+                </div>
+
+                <div class="xp-bar-container large">
+                    <div class="xp-bar-fill" id="petExpBar" style="width: 0%"></div>
+                    <span class="xp-text" id="xpText">0 / 100 XP</span>
+                </div>
+
+                <div class="pet-status">
+                    Mood: <span id="petMood">Happy 😊</span>
+                </div>
+            </div>
+
+            <div class="pet-actions-bar">
+                <button class="action-btn large-btn" id="feedBtn">
+                    <span class="icon">🍖</span>
+                    <span>Feed</span>
+                </button>
+                <button class="action-btn large-btn" id="playBtn">
+                    <span class="icon">🎾</span>
+                    <span>Play</span>
+                </button>
+                <button class="action-btn large-btn" id="walkBtn">
+                    <span class="icon">🦮</span>
+                    <span>Walk</span>
+                </button>
+                <button class="action-btn large-btn" id="sleepBtn">
+                    <span class="icon">💤</span>
+                    <span>Sleep</span>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script src="pet.js"></script>
+</body>
+
+</html>

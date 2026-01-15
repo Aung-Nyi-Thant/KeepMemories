@@ -7,8 +7,19 @@ if (!currentUserId) {
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initial Setup: Load Data from Backend
+    // --- TODAY'S DATE ---
+    const currentDay = document.getElementById('currentDay');
+    const currentMonthYear = document.getElementById('currentMonthYear');
+    if (currentDay && currentMonthYear) {
+        const now = new Date();
+        currentDay.textContent = now.getDate();
+        currentMonthYear.textContent = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    // 1. Initial Setup: Load Data from Backend
     loadDashboardData();
     checkNotifications();
+    renderPetStatus(); // Render initial defaults immediately
 
     // Logout removed from here, now in profile.js
 
@@ -45,13 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // --- DATE/CALENDAR FUNCTIONALITY ---
-    const currentDay = document.getElementById('currentDay');
-    const currentMonthYear = document.getElementById('currentMonthYear');
-
-    const now = new Date();
-    currentDay.textContent = now.getDate();
-    currentMonthYear.textContent = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
     const specialDateInput = document.getElementById('specialDateInput');
     const specialDateLabel = document.getElementById('specialDateLabel');
@@ -75,13 +79,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedTheme) {
         document.documentElement.setAttribute('data-theme', savedTheme);
     }
+
 });
 
 // --- GLOBAL STATE ---
 let localData = {
     notes: [],
     images: [],
-    dates: []
+    dates: [],
+    pet: { name: "Lovebug", level: 3 }
 };
 
 // --- API ACTIONS ---
@@ -105,7 +111,28 @@ async function loadDashboardData() {
 
         if (result.success) {
             localData = result.data;
-            // ... (rest of function)
+
+            // Update Header
+            document.getElementById('displayUsername').textContent = result.username || 'Friend';
+
+            // Store partner info for the heart popup
+            if (result.partnerName) {
+                document.getElementById('partnerSection').style.display = 'inline';
+                document.getElementById('displayPartner').textContent = result.partnerName;
+
+                // Update Popup Data
+                document.querySelector('#heartPopup .avatar-circle').textContent = result.partnerName.charAt(0).toUpperCase();
+                document.getElementById('popupInfo').textContent = `Connected with ${result.partnerName}`;
+                document.getElementById('popupStatus').textContent = "Forever & Always 💕";
+            } else {
+                document.getElementById('partnerSection').style.display = 'none';
+
+                // Single State Popup
+                document.querySelector('#heartPopup .avatar-circle').textContent = result.username.charAt(0).toUpperCase();
+                document.getElementById('popupInfo').textContent = "Waiting for a Partner";
+                document.getElementById('popupStatus').textContent = "Invite someone special! 💌";
+            }
+
             renderAll();
         } else {
             console.error("Failed to load data");
@@ -235,7 +262,9 @@ function renderAll() {
     renderNotes();
     renderGallery();
     renderDates();
+    renderPetStatus();
 }
+
 
 function renderNotes() {
     const list = document.getElementById('notesList');
@@ -304,3 +333,99 @@ function deleteDateItem(index) {
     renderDates();
     saveData('dates');
 }
+
+function renderPetStatus() {
+    const p = localData.pet || { name: "Lovebug", level: 3 };
+    const nameEl = document.getElementById('dashPetName');
+    const levelEl = document.getElementById('dashPetLevel');
+
+    if (nameEl && levelEl) {
+        nameEl.textContent = p.name;
+        levelEl.textContent = p.level;
+    }
+}
+
+// --- FLOATING HEART LOGIC ---
+const heart = document.getElementById('floatingHeart');
+const popup = document.getElementById('heartPopup');
+let isDragging = false;
+let startX, startY, initialLeft, initialTop;
+let hasMoved = false;
+
+// Mouse / Touch Events
+heart.addEventListener('mousedown', dragStart);
+heart.addEventListener('touchstart', dragStart, { passive: false });
+
+document.addEventListener('mousemove', drag);
+document.addEventListener('touchmove', drag, { passive: false });
+
+document.addEventListener('mouseup', dragEnd);
+document.addEventListener('touchend', dragEnd);
+
+function dragStart(e) {
+    initialLeft = heart.offsetLeft;
+    initialTop = heart.offsetTop;
+
+    // Get mouse/touch position
+    if (e.type === 'touchstart') {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+    } else {
+        startX = e.clientX;
+        startY = e.clientY;
+    }
+
+    isDragging = true;
+    hasMoved = false;
+
+    // Remove bottom/right positioning to allow left/top to take over
+    heart.style.bottom = 'auto';
+    heart.style.right = 'auto';
+    heart.style.left = initialLeft + 'px';
+    heart.style.top = initialTop + 'px';
+}
+
+function drag(e) {
+    if (!isDragging) return;
+    e.preventDefault(); // Prevent scrolling
+
+    let currentX, currentY;
+
+    if (e.type === 'touchmove') {
+        currentX = e.touches[0].clientX;
+        currentY = e.touches[0].clientY;
+    } else {
+        currentX = e.clientX;
+        currentY = e.clientY;
+    }
+
+    const dx = currentX - startX;
+    const dy = currentY - startY;
+
+    // Detect if actually moved (to distinguish click from micro-drag)
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+        hasMoved = true;
+    }
+
+    heart.style.left = (initialLeft + dx) + 'px';
+    heart.style.top = (initialTop + dy) + 'px';
+}
+
+function dragEnd(e) {
+    isDragging = false;
+}
+
+// Click Event (Triggered only if not dragged)
+heart.addEventListener('click', (e) => {
+    if (!hasMoved) {
+        toggleHeartPopup(true);
+    }
+});
+
+window.toggleHeartPopup = (show) => {
+    if (show) {
+        popup.classList.add('show');
+    } else {
+        popup.classList.remove('show');
+    }
+};

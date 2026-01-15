@@ -11,7 +11,8 @@ const rateLimit = require('express-rate-limit');
 
 
 const app = express();
-app.set('trust proxy', true); // More robust trust for Render proxies
+// Trust only the first proxy (Render's load balancer) - required for express-rate-limit v8+
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 

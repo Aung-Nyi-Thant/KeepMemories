@@ -11,7 +11,7 @@ const rateLimit = require('express-rate-limit');
 
 
 const app = express();
-app.set('trust proxy', 1); // Required for express-rate-limit on Render
+app.set('trust proxy', true); // More robust trust for Render proxies
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 
@@ -125,9 +125,9 @@ app.post('/api/register', async (req, res) => {
     saveDB();
 
     // Issue Token
-    consttoken = jwt.sign({ userId: userId }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: userId }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.json({ success: true, userId, username, spaceId, token: consttoken });
+    res.json({ success: true, userId, username, spaceId, token: token });
 });
 
 // 2. LOGIN

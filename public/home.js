@@ -44,30 +44,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const addNoteBtn = document.getElementById('addNoteBtn');
     const notesList = document.getElementById('notesList');
 
-    addNoteBtn.addEventListener('click', () => {
-        const text = noteInput.value.trim();
-        if (text) {
-            addNote(text);
-        }
-    });
-
-    // window.deleteNote moved to top level
-
+    if (addNoteBtn && noteInput) {
+        addNoteBtn.addEventListener('click', () => {
+            const text = noteInput.value.trim();
+            if (text) {
+                addNote(text);
+            }
+        });
+    }
 
     // --- GALLERY FUNCTIONALITY ---
     const imageInput = document.getElementById('imageInput');
 
-    imageInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                const imgData = event.target.result;
-                addImage(imgData);
-            };
-            reader.readAsDataURL(file);
-        }
-    });
+    if (imageInput) {
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const imgData = event.target.result;
+                    addImage(imgData);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 
 
 
@@ -75,16 +76,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const specialDateLabel = document.getElementById('specialDateLabel');
     const addDateBtn = document.getElementById('addDateBtn');
 
-    addDateBtn.addEventListener('click', () => {
-        const dateVal = specialDateInput.value;
-        const labelVal = specialDateLabel.value.trim();
+    if (addDateBtn && specialDateInput && specialDateLabel) {
+        addDateBtn.addEventListener('click', () => {
+            const dateVal = specialDateInput.value;
+            const labelVal = specialDateLabel.value.trim();
 
-        if (dateVal && labelVal) {
-            addDate({ date: dateVal, label: labelVal });
-            specialDateInput.value = '';
-            specialDateLabel.value = '';
-        }
-    });
+            if (dateVal && labelVal) {
+                addDate({ date: dateVal, label: labelVal });
+                specialDateInput.value = '';
+                specialDateLabel.value = '';
+            }
+        });
+    }
 
     // --- PARTNER FUNCTIONALITY ---
 

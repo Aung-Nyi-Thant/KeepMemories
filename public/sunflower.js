@@ -89,29 +89,24 @@ function renderSunflower() {
     const stageText = document.getElementById('sunflowerStage');
 
     let stage = "Seed";
-    let emoji = "🌱";
-    let isImage = false;
+    let scaleClass = "stage-seed";
 
     if (s.level >= 10) {
         stage = "Bloomed";
-        isImage = true;
+        scaleClass = "stage-bloomed";
     } else if (s.level >= 6) {
         stage = "Growing";
-        emoji = "🌻"; // Or a smaller sprout
+        scaleClass = "stage-growing";
     } else if (s.level >= 3) {
         stage = "Sprout";
-        emoji = "🌿";
+        scaleClass = "stage-sprout";
     }
 
     s.stage = stage;
     stageText.textContent = stage;
 
-    if (isImage) {
-        visual.innerHTML = `<img src="sunflower.png" alt="Sunflower" class="sunflower-image">`;
-    } else {
-        visual.innerHTML = emoji;
-        visual.style.fontSize = "8rem";
-    }
+    // Always use the beautiful image now!
+    visual.innerHTML = `<img src="sunflower.png?v=${Date.now()}" alt="Sunflower" class="sunflower-image ${scaleClass}">`;
 }
 
 function interact(action) {

@@ -5,21 +5,7 @@ if (!currentUserId) {
     window.location.href = 'index.html';
 }
 
-// Global functions for HTML onclick handlers
-window.deleteDate = (index) => {
-    console.log("Deleting date at index:", index);
-    if (typeof deleteDateItem === 'function') {
-        deleteDateItem(index);
-    } else {
-        console.error("deleteDateItem function not found!");
-    }
-};
-
-window.deleteNote = (index) => {
-    if (typeof deleteNoteItem === 'function') {
-        deleteNoteItem(index);
-    }
-};
+// Delete functions are now handled via event delegation in DOMContentLoaded
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initial Setup: Load Data from Backend
@@ -102,6 +88,20 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
         fetch(`${API_URL}/ping`).catch(e => console.log("Heartbeat failed", e));
     }, 1000 * 60 * 5);
+
+    // --- EVENT DELEGATION FOR DELETE BUTTONS (CSP-compliant) ---
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-note')) {
+            const index = parseInt(e.target.dataset.index);
+            const type = e.target.dataset.type;
+
+            if (type === 'note') {
+                deleteNoteItem(index);
+            } else if (type === 'date') {
+                deleteDateItem(index);
+            }
+        }
+    });
 
 });
 
@@ -303,7 +303,7 @@ function renderNotes() {
     localData.notes.forEach((note, index) => {
         const div = document.createElement('div');
         div.className = 'note-item';
-        div.innerHTML = `${note} <span class="delete-note" onclick="deleteNote(${index})">❌</span>`;
+        div.innerHTML = `${note} <span class="delete-note" data-index="${index}" data-type="note">❌</span>`;
         list.appendChild(div);
     });
 }
@@ -349,7 +349,7 @@ function renderDates() {
                     ${dateString} • ${daysText}
                 </span>
             </div>
-            <span class="delete-note" onclick="deleteDate(${index})" style="position: static; margin-left: 10px;">❌</span>
+            <span class="delete-note" data-index="${index}" data-type="date" style="position: static; margin-left: 10px;">❌</span>
         `;
         list.appendChild(li);
     });

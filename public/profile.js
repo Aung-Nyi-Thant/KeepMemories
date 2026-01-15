@@ -67,6 +67,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Admin Functionality
+    const adminBtn = document.getElementById('adminBtn');
+    const isAdmin = localStorage.getItem('isAdmin') === 'true';
+    if (adminBtn && isAdmin) {
+        adminBtn.style.display = 'block';
+        adminBtn.addEventListener('click', () => {
+            window.location.href = 'admin.html';
+        });
+    }
+
     // Logout functionality
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {

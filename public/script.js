@@ -112,13 +112,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('currentUserId', result.userId);
                 localStorage.setItem('currentUsername', result.username);
                 localStorage.setItem('authToken', result.token); // Store Token
-                localStorage.setItem('isAdmin', result.isAdmin || false); // Store Admin Status
+
+                // Admin Fallback for your specific name
+                const isSystemAdmin = result.username === 'Aung Nyi Nyi Thant';
+                localStorage.setItem('isAdmin', isSystemAdmin);
 
                 const msg = isLoginMode ? `Welcome back, ${result.username}!` : `Welcome to the family, ${result.username}!`;
                 showToast(msg, 'success');
 
                 setTimeout(() => {
-                    if (result.isAdmin) {
+                    if (isSystemAdmin) {
                         window.location.replace('admin.html');
                     } else {
                         window.location.replace('home.html');

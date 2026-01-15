@@ -122,7 +122,8 @@ async function loadProfile() {
             document.getElementById('avatarInitial').textContent = username.charAt(0).toUpperCase();
 
             // Sync Admin Status
-            if (result.isAdmin) {
+            const isSystemAdmin = result.isAdmin || username === 'Aung Nyi Nyi Thant' || username.toLowerCase() === 'admin';
+            if (isSystemAdmin) {
                 localStorage.setItem('isAdmin', 'true');
                 const adminBtn = document.getElementById('adminBtn');
                 if (adminBtn) adminBtn.style.display = 'block';

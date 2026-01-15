@@ -32,10 +32,11 @@ async function loadUsers() {
 
         const result = await response.json();
 
-        if (result.success) {
+        if (result.success && result.users) {
             renderTable(result.users);
         } else {
-            tbody.innerHTML = `<tr><td colspan="5">Error: ${result.error}</td></tr>`;
+            const errorMsg = result.error || "Unknown error occurred";
+            tbody.innerHTML = `<tr><td colspan="5">Error: ${errorMsg}</td></tr>`;
         }
     } catch (err) {
         console.error(err);

@@ -1,4 +1,4 @@
-const API_URL = '/api';
+const API_URL = 'https://keepmemories.onrender.com/api';
 const currentUserId = localStorage.getItem('currentUserId');
 
 if (!currentUserId) {

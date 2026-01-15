@@ -1,3 +1,5 @@
+const API_URL = 'https://keepmemories.onrender.com/api';
+
 document.addEventListener('DOMContentLoaded', () => {
     // Theme Switcher Logic
     const themeBtns = document.querySelectorAll('.theme-btn');
@@ -69,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.disabled = true;
         submitBtn.innerText = isLoginMode ? 'Logging in... 💕' : 'Signing up... ✨';
 
-        const endpoint = isLoginMode ? '/api/login' : '/api/register';
+        const endpoint = isLoginMode ? `${API_URL}/login` : `${API_URL}/register`;
 
         try {
             const response = await fetch(endpoint, {

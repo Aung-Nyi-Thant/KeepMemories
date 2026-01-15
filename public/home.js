@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addNoteBtn.addEventListener('click', () => {
         const text = noteInput.value.trim();
         if (text) {
+            addNote(text);
         }
     });
 

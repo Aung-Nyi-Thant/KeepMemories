@@ -103,6 +103,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- OTHER BUTTON LISTENERS (CSP-compliant) ---
+    const petLinkCard = document.getElementById('petLinkCard');
+    if (petLinkCard) {
+        petLinkCard.addEventListener('click', () => {
+            window.location.href = 'pet.html';
+        });
+    }
+
+    const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+    if (uploadPhotoBtn) {
+        uploadPhotoBtn.addEventListener('click', () => {
+            document.getElementById('imageInput').click();
+        });
+    }
+
+    const closeHeartPopup = document.getElementById('closeHeartPopup');
+    if (closeHeartPopup) {
+        closeHeartPopup.addEventListener('click', () => {
+            toggleHeartPopup(false);
+        });
+    }
+
 });
 
 

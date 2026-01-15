@@ -25,6 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('walkBtn').addEventListener('click', () => interact('walk'));
     document.getElementById('sleepBtn').addEventListener('click', () => interact('sleep'));
 
+    loadPetData();
+
+    // Event listener for renaming pet (CSP-compliant)
+    const petNameElement = document.getElementById('petName');
+    if (petNameElement) {
+        petNameElement.addEventListener('click', renamePet);
+    }
+
     // --- KEEP-ALIVE HEARTBEAT ---
     // Pings server every 5 minutes to prevent Render spin-down while active
     setInterval(() => {

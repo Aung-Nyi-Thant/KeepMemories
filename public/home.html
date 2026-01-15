@@ -55,7 +55,7 @@
                 <h2>📸 Photo Album</h2>
                 <div class="upload-controls">
                     <input type="file" id="imageInput" accept="image/*" hidden>
-                    <button class="action-btn" onclick="document.getElementById('imageInput').click()">Upload
+                    <button class="action-btn" id="uploadPhotoBtn">Upload
                         Photo</button>
                 </div>
                 <div id="galleryGrid" class="gallery-grid">
@@ -115,10 +115,10 @@
         <div class="avatar-circle">?</div>
         <h3 id="popupInfo">Loading...</h3>
         <p id="popupStatus">Checking connection...</p>
-        <button class="close-popup" onclick="toggleHeartPopup(false)">Close</button>
+        <button class="close-popup" id="closeHeartPopup">Close</button>
     </div>
 
-    <script src="home.js?v=3.0"></script>
+    <script src="home.js?v=4.0"></script>
 </body>
 
 </html>

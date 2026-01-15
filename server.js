@@ -11,6 +11,7 @@ const rateLimit = require('express-rate-limit');
 
 
 const app = express();
+app.set('trust proxy', 1); // Required for express-rate-limit on Render
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 

@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
@@ -9,10 +11,11 @@ const rateLimit = require('express-rate-limit');
 
 
 const app = express();
-const PORT = 3000;
-const JWT_SECRET = 'super-pro-secret-key-123!@#'; // In production, use ENV var
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 
 app.use(cors());
+app.use(helmet());
 app.use(bodyParser.json({ limit: '50mb' })); // Increased limit for images
 app.use(express.static(path.join(__dirname, 'public')));
 

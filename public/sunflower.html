@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="strawberry">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeepMemories - Sunflower Garden</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="pet-page-body">
+    <div class="pet-page-container">
+        <header class="pet-header">
+            <a href="home.html" class="back-btn">⬅ Back to Home</a>
+            <h1>Sunflower Garden 🌻</h1>
+        </header>
+
+        <main class="pet-stage">
+            <div class="sky-background">
+                <div class="sun"></div>
+            </div>
+
+            <div class="sunflower-container">
+                <div id="sunflowerDisplay" class="sunflower-stage-display">
+                    <!-- Emojis or images will appear here based on stage -->
+                    <div id="sunflowerVisual" style="font-size: 8rem;">🌱</div>
+                </div>
+                <div class="dog-shadow"></div>
+            </div>
+
+            <div class="pet-stats-panel">
+                <div class="pet-identity">
+                    <h2 id="sunflowerName" style="cursor: pointer;">Sunny</h2>
+                    <span class="level-badge">Lvl <span id="sunflowerLevel">1</span></span>
+                </div>
+
+                <div class="xp-bar-container large">
+                    <div class="xp-bar-fill" id="sunflowerExpBar" style="width: 0%"></div>
+                    <span class="xp-text" id="xpText">0 / 100 XP</span>
+                </div>
+
+                <div class="pet-status">
+                    Stage: <span id="sunflowerStage">Seed</span>
+                </div>
+            </div>
+
+            <div class="pet-actions-bar">
+                <button class="action-btn large-btn" id="waterBtn">
+                    <span class="icon">💧</span>
+                    <span>Water</span>
+                </button>
+                <button class="action-btn large-btn" id="fertilizeBtn">
+                    <span class="icon">🧪</span>
+                    <span>Fertilize</span>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script src="sunflower.js"></script>
+</body>
+
+</html>

@@ -48,6 +48,7 @@ async function saveDB() {
 
 // --- CONSTANTS ---
 const INITIAL_PET = { name: "Lovebug", level: 3, exp: 0, mood: "Happy", lastFed: 0 };
+const INITIAL_SUNFLOWER = { name: "Sunny", level: 1, exp: 0, stage: "Seed", lastWatered: 0, lastFertilized: 0 };
 
 // --- HELPER FUNCTIONS ---
 function generateId() {
@@ -120,7 +121,8 @@ app.post('/api/register', async (req, res) => {
         notes: [],
         images: [],
         dates: [],
-        pet: { ...INITIAL_PET }
+        pet: { ...INITIAL_PET },
+        sunflower: { ...INITIAL_SUNFLOWER }
     };
 
     saveDB();

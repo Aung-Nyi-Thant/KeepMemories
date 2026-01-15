@@ -111,6 +111,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const sunflowerLinkCard = document.getElementById('sunflowerLinkCard');
+    if (sunflowerLinkCard) {
+        sunflowerLinkCard.addEventListener('click', () => {
+            window.location.href = 'sunflower.html';
+        });
+    }
+
     const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
     if (uploadPhotoBtn) {
         uploadPhotoBtn.addEventListener('click', () => {
@@ -134,7 +141,8 @@ let localData = {
     notes: [],
     images: [],
     dates: [],
-    pet: { name: "Lovebug", level: 3 }
+    pet: { name: "Lovebug", level: 3 },
+    sunflower: { name: "Sunny", level: 1 }
 };
 
 // --- API ACTIONS ---
@@ -312,6 +320,7 @@ function renderAll() {
     renderGallery();
     renderDates();
     renderPetStatus();
+    renderSunflowerStatus();
 }
 
 
@@ -393,6 +402,17 @@ function renderPetStatus() {
     if (nameEl && levelEl) {
         nameEl.textContent = p.name;
         levelEl.textContent = p.level;
+    }
+}
+
+function renderSunflowerStatus() {
+    const s = localData.sunflower || { name: "Sunny", level: 1 };
+    const nameEl = document.getElementById('dashSunflowerName');
+    const levelEl = document.getElementById('dashSunflowerLevel');
+
+    if (nameEl && levelEl) {
+        nameEl.textContent = s.name;
+        levelEl.textContent = s.level;
     }
 }
 

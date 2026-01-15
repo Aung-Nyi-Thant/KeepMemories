@@ -47,60 +47,59 @@ document.addEventListener('DOMContentLoaded', () => {
     addNoteBtn.addEventListener('click', () => {
         const text = noteInput.value.trim();
         if (text) {
-            addNote(text);
         }
     });
 
-});
-
-// window.deleteNote moved to top level
+    // window.deleteNote moved to top level
 
 
-// --- GALLERY FUNCTIONALITY ---
-const imageInput = document.getElementById('imageInput');
+    // --- GALLERY FUNCTIONALITY ---
+    const imageInput = document.getElementById('imageInput');
 
-imageInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function (event) {
-            const imgData = event.target.result;
-            addImage(imgData);
-        };
-        reader.readAsDataURL(file);
+    imageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const imgData = event.target.result;
+                addImage(imgData);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+
+
+    const specialDateInput = document.getElementById('specialDateInput');
+    const specialDateLabel = document.getElementById('specialDateLabel');
+    const addDateBtn = document.getElementById('addDateBtn');
+
+    addDateBtn.addEventListener('click', () => {
+        const dateVal = specialDateInput.value;
+        const labelVal = specialDateLabel.value.trim();
+
+        if (dateVal && labelVal) {
+            addDate({ date: dateVal, label: labelVal });
+            specialDateInput.value = '';
+            specialDateLabel.value = '';
+        }
+    });
+
+    // --- PARTNER FUNCTIONALITY ---
+
+    // --- THEME ---
+    const savedTheme = localStorage.getItem('selected-theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
     }
+
+    // --- KEEP-ALIVE HEARTBEAT ---
+    // Pings server every 5 minutes to prevent Render spin-down while active
+    setInterval(() => {
+        fetch(`${API_URL}/ping`).catch(e => console.log("Heartbeat failed", e));
+    }, 1000 * 60 * 5);
+
 });
-
-
-
-const specialDateInput = document.getElementById('specialDateInput');
-const specialDateLabel = document.getElementById('specialDateLabel');
-const addDateBtn = document.getElementById('addDateBtn');
-
-addDateBtn.addEventListener('click', () => {
-    const dateVal = specialDateInput.value;
-    const labelVal = specialDateLabel.value.trim();
-
-    if (dateVal && labelVal) {
-        addDate({ date: dateVal, label: labelVal });
-        specialDateInput.value = '';
-        specialDateLabel.value = '';
-    }
-});
-
-// --- PARTNER FUNCTIONALITY ---
-
-// --- THEME ---
-const savedTheme = localStorage.getItem('selected-theme');
-if (savedTheme) {
-    document.documentElement.setAttribute('data-theme', savedTheme);
-}
-
-// --- KEEP-ALIVE HEARTBEAT ---
-// Pings server every 5 minutes to prevent Render spin-down while active
-setInterval(() => {
-    fetch(`${API_URL}/ping`).catch(e => console.log("Heartbeat failed", e));
-}, 1000 * 60 * 5);
 
 
 

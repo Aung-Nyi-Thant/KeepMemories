@@ -24,7 +24,7 @@ async function loadUsers() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (response.status === 403) {
+        if (response.isAdmin === false) {
             alert("Access Denied: Admins only! 🚫");
             window.location.href = 'home.html';
             return;
@@ -32,11 +32,12 @@ async function loadUsers() {
 
         const result = await response.json();
 
-        if (result.success && result.users) {
+        if (result.isAdmin == true) {
             renderTable(result.users);
-        } else {
-            const errorMsg = result.error || "Unknown error occurred";
-            tbody.innerHTML = `<tr><td colspan="5">Error: ${errorMsg}</td></tr>`;
+        } else if (result.isAdmin == false) {
+            alert("Access Denied: Admins only! 🚫");
+            window.location.href = 'home.html';
+            return;
         }
     } catch (err) {
         console.error(err);

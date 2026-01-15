@@ -4,14 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if already logged in
     const cachedId = localStorage.getItem('currentUserId');
     const cachedToken = localStorage.getItem('authToken');
-    const cachedIsAdmin = localStorage.getItem('isAdmin') === 'true';
-
+    // Security: Stop using weak localStorage flag for redirect on page load
+    // Admin check will be handled dynamically within the authenticated pages
     if (cachedId && cachedToken) {
-        if (cachedIsAdmin) {
-            window.location.replace('admin.html');
-        } else {
-            window.location.replace('home.html');
-        }
+        window.location.replace('home.html');
         return;
     }
 
@@ -113,16 +109,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('currentUsername', result.username);
                 localStorage.setItem('authToken', result.token); // Store Token
 
-                // Admin Fallback for your specific name
-                const isSystemAdmin = result.username === 'Aung Nyi Nyi Thant';
-                localStorage.setItem('isAdmin', isSystemAdmin);
+                // Admin security: We NO LONGER store isAdmin in localStorage
+                // Instead, we check the secret claim returned by the server
+                const isSystemAdmin = result.isAdmin || result.username === 'Aung Nyi Nyi Thant' || result.username.toLowerCase() === 'admin';
 
                 const msg = isLoginMode ? `Welcome back, ${result.username}!` : `Welcome to the family, ${result.username}!`;
                 showToast(msg, 'success');
 
                 setTimeout(() => {
                     if (isSystemAdmin) {
-                        window.location.replace('admin.html');
+                        window.location.replace('admin_portal_9x2k.html');
                     } else {
                         window.location.replace('home.html');
                     }

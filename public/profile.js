@@ -69,11 +69,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Admin Functionality
     const adminBtn = document.getElementById('adminBtn');
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    if (adminBtn && isAdmin) {
-        adminBtn.style.display = 'block';
+    // Security: Always hidden by default, shown only after server verification
+    if (adminBtn) {
+        adminBtn.style.display = 'none';
         adminBtn.addEventListener('click', () => {
-            window.location.href = 'admin.html';
+            window.location.href = 'admin_portal_9x2k.html';
         });
     }
 
@@ -123,12 +123,9 @@ async function loadProfile() {
 
             // Sync Admin Status
             const isSystemAdmin = result.isAdmin || username === 'Aung Nyi Nyi Thant' || username.toLowerCase() === 'admin';
-            if (isSystemAdmin) {
-                localStorage.setItem('isAdmin', 'true');
-                const adminBtn = document.getElementById('adminBtn');
-                if (adminBtn) adminBtn.style.display = 'block';
-            } else {
-                localStorage.setItem('isAdmin', 'false');
+            const adminBtn = document.getElementById('adminBtn');
+            if (isSystemAdmin && adminBtn) {
+                adminBtn.style.display = 'block';
             }
 
             // Check if partnered

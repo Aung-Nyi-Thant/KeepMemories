@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="strawberry">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeepMemories - My Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .profile-container {
+            max-width: 600px;
+            margin: 40px auto;
+            text-align: center;
+        }
+
+        .profile-card {
+            background: var(--card-bg);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 40px var(--shadow-color);
+            border: 2px solid var(--border-color);
+        }
+
+        .avatar-circle {
+            width: 100px;
+            height: 100px;
+            background: var(--primary-color);
+            color: white;
+            font-size: 3rem;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+            font-family: var(--font-heading);
+            border: 4px solid white;
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .profile-username {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        .id-badge {
+            background: rgba(255, 255, 255, 0.6);
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 2px dashed var(--border-color);
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .id-badge:hover {
+            background: white;
+            border-color: var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        .section-divider {
+            border-top: 2px dashed var(--border-color);
+            margin: 30px 0;
+        }
+
+        .invite-section h3 {
+            font-family: var(--font-heading);
+            color: var(--text-main);
+            margin-bottom: 15px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .back-btn:hover {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="profile-container">
+            <div class="profile-card">
+                <div class="avatar-circle" id="avatarInitial">?</div>
+                <h1 class="profile-username" id="profileUsername">Loading...</h1>
+
+                <div class="id-badge" id="idBadge" title="Click to Copy">
+                    ID: <span id="userId">...</span> 📋
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="invite-section">
+                    <h3>Invite a Friend</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 15px;">Ask your friend for their ID and enter it
+                        below to share memories!</p>
+
+                    <div class="input-group">
+                        <input type="text" id="inviteInput" placeholder="Enter Friend's ID (e.g. 9X2A1M)"
+                            style="text-align: center;">
+                    </div>
+                    <button id="sendInviteBtn" class="login-btn">Send Invite 💌</button>
+                </div>
+
+                <a href="home.html" class="back-btn">← Back to Dashboard</a>
+
+                <div style="margin-top: 30px; border-top: 2px dashed var(--border-color); padding-top: 20px;">
+                    <button id="disconnectBtn" class="logout-btn"
+                        style="width: 100%; color: #ff9f43; border-color: #ff9f43; margin-bottom: 10px; display: none;">Broken
+                        Heart? 💔</button>
+                    <button id="logoutBtn" class="logout-btn"
+                        style="width: 100%; color: #ff4757; border-color: #ff4757;">Log Out</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="profile.js"></script>
+</body>
+
+</html>

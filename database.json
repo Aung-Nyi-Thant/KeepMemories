@@ -1,0 +1,31 @@
+{
+  "users": {
+    "LMQ8KI": {
+      "id": "LMQ8KI",
+      "username": "Aung Nyi Nyi Thant",
+      "password": "Accmobile",
+      "spaceId": "SPACE_LMQ8KI",
+      "partnerId": null,
+      "pendingInvite": null
+    },
+    "D5QDJP": {
+      "id": "D5QDJP",
+      "username": "Someone",
+      "password": "123456",
+      "spaceId": "SPACE_D5QDJP",
+      "partnerId": null
+    }
+  },
+  "spaces": {
+    "SPACE_LMQ8KI": {
+      "notes": [],
+      "images": [],
+      "dates": []
+    },
+    "SPACE_D5QDJP": {
+      "notes": [],
+      "images": [],
+      "dates": []
+    }
+  }
+}

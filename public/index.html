@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="strawberry">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeepMemories - Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="login-card">
+            <div class="card-header">
+                <h1>Welcome Back!</h1>
+                <p>We missed you &#10084;</p>
+            </div>
+
+            <form id="loginForm" onsubmit="event.preventDefault();">
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Username" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+
+                <div class="actions">
+                    <a href="#" class="forgot-pass">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="login-btn">Let me in!</button>
+            </form>
+
+            <div class="theme-switcher">
+                <p>Pick a mood:</p>
+                <div class="themes">
+                    <button class="theme-btn strawberry" data-theme="strawberry"
+                        aria-label="Strawberry Theme">🍓</button>
+                    <button class="theme-btn blueberry" data-theme="blueberry" aria-label="Blueberry Theme">🫐</button>
+                    <button class="theme-btn mint" data-theme="mint" aria-label="Mint Theme">🌿</button>
+                    <button class="theme-btn lavender" data-theme="lavender" aria-label="Lavender Theme">🔮</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+</body>
+
+</html>

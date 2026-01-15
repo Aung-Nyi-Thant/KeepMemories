@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="strawberry">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeepMemories - Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <a href="profile.html" class="floating-profile-btn" title="My Profile">👤</a>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo">
+                <h1>KeepMemories &#10084;</h1>
+                <p class="welcome-text">Welcome, <span id="displayUsername">Friend</span><span id="partnerSection"
+                        style="display:none"> & <span id="displayPartner"></span></span>!</p>
+            </div>
+        </header>
+
+        <main class="dashboard-grid">
+            <!-- Notes Section -->
+            <section class="dashboard-card notes-section">
+                <h2>📝 My Notes</h2>
+                <div class="notes-controls">
+                    <input type="text" id="noteInput" placeholder="Type a happy thought...">
+                    <button id="addNoteBtn" class="action-btn">Add</button>
+                </div>
+                <div id="notesList" class="notes-list">
+                    <!-- Notes will appear here -->
+                    <div class="empty-state">No notes yet!</div>
+                </div>
+            </section>
+
+            <!-- Gallery Section -->
+            <section class="dashboard-card gallery-section">
+                <h2>📸 Photo Album</h2>
+                <div class="upload-controls">
+                    <input type="file" id="imageInput" accept="image/*" hidden>
+                    <button class="action-btn" onclick="document.getElementById('imageInput').click()">Upload
+                        Photo</button>
+                </div>
+                <div id="galleryGrid" class="gallery-grid">
+                    <!-- Polaroids will appear here -->
+                    <div class="empty-state">No photos yet!</div>
+                </div>
+            </section>
+
+            <!-- Date/Calendar Section -->
+            <section class="dashboard-card date-section">
+                <h2>📅 Important Dates</h2>
+                <div class="date-display">
+                    <p class="today-label">Today is</p>
+                    <div class="current-date">
+                        <span id="currentDay">--</span>
+                        <span id="currentMonthYear">--</span>
+                    </div>
+                </div>
+                <div class="special-date-input">
+                    <label>Save a Date:</label>
+                    <div class="date-row">
+                        <input type="date" id="specialDateInput">
+                        <input type="text" id="specialDateLabel" placeholder="Birthday, Anniversary...">
+                        <button id="addDateBtn" class="action-btn small">Save</button>
+                    </div>
+                </div>
+                <ul id="datesList" class="dates-list">
+                    <!-- Saved dates go here -->
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <!-- Invitation Letter Modal -->
+    <div id="inviteModal" class="modal-overlay" style="display: none;">
+        <div class="letter-container">
+            <div class="envelope">
+                <div class="wax-seal">💌</div>
+                <div class="letter-content">
+                    <h2>New Invitation!</h2>
+                    <p style="margin-bottom: 20px;"><strong><span id="inviterName">Someone</span></strong> wants to
+                        share memories with you!</p>
+                    <div class="letter-actions">
+                        <button id="acceptBtn" class="action-btn" style="background: #4ade80;">Accept ✅</button>
+                        <button id="declineBtn" class="action-btn" style="background: #ff4757;">Decline ❌</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="home.js"></script>
+</body>
+
+</html>

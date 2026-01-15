@@ -16,6 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('selected-theme');
     if (savedTheme) {
         htmlElement.setAttribute('data-theme', savedTheme);
+        themeBtns.forEach(btn => {
+            if (btn.getAttribute('data-theme') === savedTheme) btn.classList.add('active');
+        });
+    } else {
+        // Default active
+        themeBtns.forEach(btn => {
+            if (btn.getAttribute('data-theme') === 'strawberry') btn.classList.add('active');
+        });
     }
 
     themeBtns.forEach(btn => {
@@ -23,6 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const theme = btn.getAttribute('data-theme');
             htmlElement.setAttribute('data-theme', theme);
             localStorage.setItem('selected-theme', theme);
+
+            // UI Update
+            themeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
 
             btn.style.transform = 'scale(0.95)';
             setTimeout(() => { btn.style.transform = ''; }, 100);

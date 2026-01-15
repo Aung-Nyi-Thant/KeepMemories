@@ -36,6 +36,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Theme Switcher Logic
+    const themeBtns = document.querySelectorAll('.theme-btn');
+    const htmlElement = document.documentElement;
+
+    // The savedTheme variable is already declared above, so we'll reuse it or re-fetch if needed.
+    // For consistency with the instruction, let's re-check it here.
+    const savedThemeForSwitcher = localStorage.getItem('selected-theme');
+    if (savedThemeForSwitcher) {
+        htmlElement.setAttribute('data-theme', savedThemeForSwitcher);
+        // Mark active
+        themeBtns.forEach(btn => {
+            if (btn.getAttribute('data-theme') === savedThemeForSwitcher) btn.classList.add('active');
+        });
+    }
+
+    themeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const theme = btn.getAttribute('data-theme');
+            htmlElement.setAttribute('data-theme', theme);
+            localStorage.setItem('selected-theme', theme);
+
+            // UI Update
+            themeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Feedback
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => { btn.style.transform = ''; }, 100);
+        });
+    });
+
     // Logout functionality
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {

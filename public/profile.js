@@ -121,6 +121,15 @@ async function loadProfile() {
             document.getElementById('userId').textContent = result.myId;
             document.getElementById('avatarInitial').textContent = username.charAt(0).toUpperCase();
 
+            // Sync Admin Status
+            if (result.isAdmin) {
+                localStorage.setItem('isAdmin', 'true');
+                const adminBtn = document.getElementById('adminBtn');
+                if (adminBtn) adminBtn.style.display = 'block';
+            } else {
+                localStorage.setItem('isAdmin', 'false');
+            }
+
             // Check if partnered
             if (result.partnerName) {
                 const discBtn = document.getElementById('disconnectBtn');

@@ -205,6 +205,7 @@ app.get('/api/data/:userId', authenticate, (req, res) => {
     res.json({
         success: true,
         data: spaceData,
+        username: user.username,
         partnerName: partnerName,
         myId: userId
     });

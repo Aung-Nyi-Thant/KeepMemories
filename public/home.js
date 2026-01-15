@@ -127,14 +127,16 @@ async function loadDashboardData() {
                 document.getElementById('displayPartner').textContent = result.partnerName;
 
                 // Update Popup Data
-                document.querySelector('#heartPopup .avatar-circle').textContent = result.partnerName.charAt(0).toUpperCase();
+                const partnerInitial = result.partnerName.charAt(0).toUpperCase() || '?';
+                document.querySelector('#heartPopup .avatar-circle').textContent = partnerInitial;
                 document.getElementById('popupInfo').textContent = `Connected with ${result.partnerName}`;
                 document.getElementById('popupStatus').textContent = "Forever & Always 💕";
             } else {
                 document.getElementById('partnerSection').style.display = 'none';
 
                 // Single State Popup
-                document.querySelector('#heartPopup .avatar-circle').textContent = result.username.charAt(0).toUpperCase();
+                const myInitial = (result.username && result.username.charAt(0).toUpperCase()) || 'F';
+                document.querySelector('#heartPopup .avatar-circle').textContent = myInitial;
                 document.getElementById('popupInfo').textContent = "Waiting for a Partner";
                 document.getElementById('popupStatus').textContent = "Invite someone special! 💌";
             }

@@ -102,7 +102,7 @@ setInterval(() => {
     fetch(`${API_URL}/ping`).catch(e => console.log("Heartbeat failed", e));
 }, 1000 * 60 * 5);
 
-});
+
 
 // --- GLOBAL STATE ---
 let localData = {

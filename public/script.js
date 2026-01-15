@@ -1,6 +1,14 @@
 const API_URL = 'https://keepmemories.onrender.com/api';
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Check if already logged in
+    const cachedId = localStorage.getItem('currentUserId');
+    const cachedToken = localStorage.getItem('authToken');
+    if (cachedId && cachedToken) {
+        window.location.replace('home.html');
+        return;
+    }
+
     // Theme Switcher Logic
     const themeBtns = document.querySelectorAll('.theme-btn');
     const htmlElement = document.documentElement;
@@ -91,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(msg, 'success');
 
                 setTimeout(() => {
-                    window.location.href = 'home.html';
+                    window.location.replace('home.html');
                 }, 1500); // Wait for toast
             } else {
                 showToast(result.error || "Something went wrong :(", 'error');

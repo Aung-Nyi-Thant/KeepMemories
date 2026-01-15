@@ -321,10 +321,14 @@ function renderDates() {
 
         let daysText = diffDays === 0 ? "Today!" : diffDays > 0 ? `${diffDays} days left` : `${Math.abs(diffDays)} days ago`;
 
+        const dateString = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
         li.innerHTML = `
             <div style="flex-grow: 1;">
                 <span>${item.label}</span>
-                <span class="date-days" style="display:block; font-size: 0.8em;">${daysText}</span>
+                <span class="date-days" style="display:block; font-size: 0.8em; color: var(--secondary-color);">
+                    ${dateString} • ${daysText}
+                </span>
             </div>
             <span class="delete-note" onclick="deleteDate(${index})" style="position: static; margin-left: 10px;">❌</span>
         `;

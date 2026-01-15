@@ -33,8 +33,12 @@ if (fs.existsSync(DB_FILE)) {
     }
 }
 
-function saveDB() {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+async function saveDB() {
+    try {
+        await fs.promises.writeFile(DB_FILE, JSON.stringify(db, null, 2));
+    } catch (err) {
+        console.error("Critical error saving database:", err);
+    }
 }
 
 // --- CONSTANTS ---
@@ -197,9 +201,6 @@ app.get('/api/data/:userId', authenticate, (req, res) => {
         partnerName = db.users[user.partnerId]?.username;
     }
 
-    if (spaceData.pet) {
-        console.log(`[GET] Pet data loaded for user ${userId}: Level ${spaceData.pet.level}, Exp ${spaceData.pet.exp}`);
-    }
 
     res.json({
         success: true,
@@ -398,6 +399,11 @@ app.get('/api/admin/users', authenticate, (req, res) => {
 });
 
 // Start Server
+// --- STAY-ALIVE HEARTBEAT ---
+app.get('/api/ping', (req, res) => {
+    res.json({ success: true, timestamp: Date.now() });
+});
+
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });

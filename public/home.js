@@ -80,6 +80,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.setAttribute('data-theme', savedTheme);
     }
 
+    // --- KEEP-ALIVE HEARTBEAT ---
+    // Pings server every 5 minutes to prevent Render spin-down while active
+    setInterval(() => {
+        fetch(`${API_URL}/ping`).catch(e => console.log("Heartbeat failed", e));
+    }, 1000 * 60 * 5);
+
 });
 
 // --- GLOBAL STATE ---

@@ -24,6 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('playBtn').addEventListener('click', () => interact('play'));
     document.getElementById('walkBtn').addEventListener('click', () => interact('walk'));
     document.getElementById('sleepBtn').addEventListener('click', () => interact('sleep'));
+
+    // --- KEEP-ALIVE HEARTBEAT ---
+    // Pings server every 5 minutes to prevent Render spin-down while active
+    setInterval(() => {
+        fetch(`${API_URL}/ping`).catch(e => console.log("Heartbeat failed", e));
+    }, 1000 * 60 * 5);
 });
 
 async function loadPetData() {

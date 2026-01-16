@@ -115,6 +115,7 @@ async function loadProfile() {
         const result = await response.json();
 
         if (result.success) {
+            const username = result.username || localStorage.getItem('currentUsername') || 'Friend';
             document.getElementById('profileUsername').textContent = username;
             document.getElementById('userId').textContent = result.myId;
 

@@ -369,17 +369,17 @@ function initSocketIO(scene) {
             partner.targetY = partner.y;
         }
         
-        partner.active = true;
-        updatePartnerStatus(true);
+                partner.active = true;
+                updatePartnerStatus(true);
     });
 
     // Handle partner leaving the playground
     socket.on('playground:partnerLeft', (data) => {
         console.log('[Playground] Partner left:', data);
-        partner.active = false;
+                partner.active = false;
         partner.setVisible(false);
         partner.nameText.setVisible(false);
-        updatePartnerStatus(false);
+                updatePartnerStatus(false);
     });
 
     // Handle real-time position updates from partner
@@ -405,6 +405,20 @@ function initSocketIO(scene) {
             updatePartnerStatus(true);
         }
     });
+
+    // Handle invitation success
+    socket.on('playground:inviteSuccess', (data) => {
+        alert(data.message || "Invitation sent! 💌");
+        if (inviteModal) {
+            inviteModal.classList.remove('active');
+            inviteUserIdInput.value = '';
+        }
+    });
+
+    // Handle invitation errors
+    socket.on('playground:inviteError', (data) => {
+        alert(data.message || "Error sending invitation.");
+    });
 }
 
 function updatePartnerStatus(online) {
@@ -428,28 +442,88 @@ if (homeBtn) {
     });
 }
 
+// Invite Modal Handling
 const inviteBtn = document.getElementById('inviteBtn');
+const inviteModal = document.getElementById('inviteModal');
+const inviteUserIdInput = document.getElementById('inviteUserIdInput');
+const sendInviteBtn = document.getElementById('sendInviteBtn');
+const cancelInviteBtn = document.getElementById('cancelInviteBtn');
+
 if (inviteBtn) {
-    inviteBtn.addEventListener('click', async () => {
-        if (!partnerId) {
-            alert("You need to have a partner connected first! 💕");
+    inviteBtn.addEventListener('click', () => {
+        if (inviteModal) {
+            inviteModal.classList.add('active');
+            inviteUserIdInput.value = partnerId || ''; // Pre-fill with partner ID if available
+            inviteUserIdInput.focus();
+        }
+    });
+}
+
+if (cancelInviteBtn) {
+    cancelInviteBtn.addEventListener('click', () => {
+        if (inviteModal) {
+            inviteModal.classList.remove('active');
+            inviteUserIdInput.value = '';
+        }
+    });
+}
+
+// Close modal when clicking outside
+if (inviteModal) {
+    inviteModal.addEventListener('click', (e) => {
+        if (e.target === inviteModal) {
+            inviteModal.classList.remove('active');
+            inviteUserIdInput.value = '';
+        }
+    });
+}
+
+// Send invite on button click
+if (sendInviteBtn) {
+    sendInviteBtn.addEventListener('click', async () => {
+        const targetUserId = inviteUserIdInput.value.trim();
+        
+        if (!targetUserId) {
+            alert("Please enter a User ID!");
             return;
         }
 
         try {
             // Send invitation via Socket.IO if connected, otherwise fallback to HTTP
             if (socket && socket.connected) {
-                socket.emit('playground:invite');
-                alert("Invitation sent! 💌 Your partner will be notified.");
+                socket.emit('playground:invite', { targetUserId: targetUserId });
+                // Response will come via socket event
             } else {
-                await fetch(`${API_URL}/playground/invite`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`${API_URL}/playground/invite`, {
+                method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ targetUserId: targetUserId })
                 });
-                alert("Invitation sent! 💌");
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message || "Invitation sent! 💌");
+                    if (inviteModal) {
+                        inviteModal.classList.remove('active');
+                        inviteUserIdInput.value = '';
+                    }
+                } else {
+                    alert(result.error || "Error sending invitation.");
+                }
             }
         } catch (e) {
-            alert("Error sending invitation.");
+            alert("Error sending invitation: " + e.message);
+        }
+    });
+}
+
+// Handle Enter key in input field
+if (inviteUserIdInput) {
+    inviteUserIdInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendInviteBtn?.click();
         }
     });
 }

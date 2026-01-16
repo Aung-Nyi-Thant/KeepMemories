@@ -538,25 +538,54 @@ app.get('/api/playground/status/:userId', authenticate, (req, res) => {
 
 app.post('/api/playground/invite', authenticate, (req, res) => {
     const userId = req.user.userId;
-    if (!db.playground[userId]) {
-        db.playground[userId] = { x: 400, y: 300, sprite: 'idle', lastUpdate: Date.now(), invitingPartner: true };
-    } else {
-        db.playground[userId].invitingPartner = true;
-    }
+    const { targetUserId } = req.body;
+    const targetId = targetUserId || db.users[userId]?.partnerId;
     
-    // Notify partner via WebSocket if they're connected
+    if (!targetId) {
+        return res.status(400).json({ 
+            success: false,
+            error: 'No target user specified. Please provide a targetUserId or have a partner connected.' 
+        });
+    }
+
+    if (targetId === userId) {
+        return res.status(400).json({ 
+            success: false,
+            error: 'You cannot invite yourself!' 
+        });
+    }
+
+    const targetUser = db.users[targetId];
+    if (!targetUser) {
+        return res.status(404).json({ 
+            success: false,
+            error: 'User not found. Please check the User ID.' 
+        });
+    }
+
     const user = db.users[userId];
-    if (user && user.partnerId) {
-        const partnerConnection = playgroundConnections.get(user.partnerId);
-        if (partnerConnection) {
-            io.to(partnerConnection.socketId).emit('playground:invite', {
-                fromId: userId,
-                fromName: user.username
-            });
+    
+    // Notify target via WebSocket if they're connected
+    const targetConnection = playgroundConnections.get(targetId);
+    if (targetConnection) {
+        io.to(targetConnection.socketId).emit('playground:invite', {
+            fromId: userId,
+            fromName: user.username
+        });
+    } else {
+        // Store invite flag for when they join
+        if (!db.playground[targetId]) {
+            db.playground[targetId] = { x: 400, y: 300, sprite: 'idle', lastUpdate: Date.now(), invitingPartner: userId };
+        } else {
+            db.playground[targetId].invitingPartner = userId;
         }
+        saveDB();
     }
     
-    res.json({ success: true });
+    res.json({ 
+        success: true,
+        message: `Invitation sent to ${targetUser.username}! 💌`
+    });
 });
 
 // --- SOCKET.IO PLAYGROUND MULTIPLAYER ---
@@ -586,6 +615,33 @@ io.on('connection', (socket) => {
     }
     
     console.log(`[Playground] User ${user.username} (${userId}) connected to playground`);
+    
+    // Check if someone invited this user to the playground
+    if (db.playground[userId]?.invitingPartner) {
+        const inviterId = db.playground[userId].invitingPartner;
+        const inviter = db.users[inviterId];
+        const inviterConnection = playgroundConnections.get(inviterId);
+        
+        if (inviter) {
+            // Notify the newly joined user about the invitation
+            socket.emit('playground:invite', {
+                fromId: inviterId,
+                fromName: inviter.username
+            });
+            
+            // If inviter is in playground, notify them that the user joined
+            if (inviterConnection) {
+                io.to(inviterConnection.socketId).emit('playground:inviteAccepted', {
+                    userId: userId,
+                    username: user.username
+                });
+            }
+            
+            // Clear the invitation flag
+            db.playground[userId].invitingPartner = null;
+            saveDB();
+        }
+    }
     
     // Store connection
     playgroundConnections.set(userId, {
@@ -713,22 +769,52 @@ io.on('connection', (socket) => {
     });
     
     // Handle playground invite via WebSocket
-    socket.on('playground:invite', () => {
-        if (user.partnerId) {
-            const partnerConnection = playgroundConnections.get(user.partnerId);
-            if (partnerConnection) {
-                io.to(partnerConnection.socketId).emit('playground:invite', {
-                    fromId: userId,
-                    fromName: user.username
-                });
+    socket.on('playground:invite', (data) => {
+        const targetUserId = data?.targetUserId || user.partnerId;
+        
+        if (!targetUserId) {
+            socket.emit('playground:inviteError', {
+                message: 'No target user specified. Please provide a User ID or have a partner connected.'
+            });
+            return;
+        }
+
+        if (targetUserId === userId) {
+            socket.emit('playground:inviteError', {
+                message: 'You cannot invite yourself!'
+            });
+            return;
+        }
+
+        const targetUser = db.users[targetUserId];
+        if (!targetUser) {
+            socket.emit('playground:inviteError', {
+                message: 'User not found. Please check the User ID.'
+            });
+            return;
+        }
+
+        const targetConnection = playgroundConnections.get(targetUserId);
+        if (targetConnection) {
+            // User is in playground, send real-time notification
+            io.to(targetConnection.socketId).emit('playground:invite', {
+                fromId: userId,
+                fromName: user.username
+            });
+            socket.emit('playground:inviteSuccess', {
+                message: `Invitation sent to ${targetUser.username}! 💌`
+            });
+        } else {
+            // User not in playground, store invite flag for when they join
+            if (!db.playground[targetUserId]) {
+                db.playground[targetUserId] = { x: 400, y: 300, sprite: 'idle', lastUpdate: Date.now(), invitingPartner: userId };
             } else {
-                // Partner not in playground, store invite flag
-                if (!db.playground[userId]) {
-                    db.playground[userId] = { x: 400, y: 300, sprite: 'idle', lastUpdate: Date.now(), invitingPartner: true };
-                } else {
-                    db.playground[userId].invitingPartner = true;
-                }
+                db.playground[targetUserId].invitingPartner = userId;
             }
+            saveDB();
+            socket.emit('playground:inviteSuccess', {
+                message: `Invitation sent to ${targetUser.username}! They will be notified when they join the playground. 💌`
+            });
         }
     });
     

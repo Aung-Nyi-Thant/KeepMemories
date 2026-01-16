@@ -134,6 +134,87 @@
             background: #ff4757;
         }
 
+        /* Invite Modal */
+        .invite-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .invite-modal.active {
+            display: flex;
+        }
+
+        .invite-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .invite-modal-content h3 {
+            margin-top: 0;
+            color: var(--text-main);
+            font-family: var(--font-main);
+        }
+
+        .invite-modal-content input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: var(--font-main);
+            font-size: 16px;
+            margin: 15px 0;
+            box-sizing: border-box;
+        }
+
+        .invite-modal-content input:focus {
+            outline: none;
+            border-color: var(--accent-color, #ff6b9d);
+        }
+
+        .invite-modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .invite-modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-family: var(--font-main);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .invite-modal-buttons .btn-primary {
+            background: var(--accent-color, #ff6b9d);
+            color: white;
+        }
+
+        .invite-modal-buttons .btn-secondary {
+            background: #e0e0e0;
+            color: var(--text-main);
+        }
+
+        .invite-modal-buttons button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
         /* Animation */
         @keyframes fadeIn {
             from {
@@ -159,7 +240,7 @@
     <div id="ui-overlay">
         <div id="game-controls">
             <button id="homeBtn" class="game-btn">🏠 Home</button>
-            <button id="inviteBtn" class="game-btn">📩 Invite Partner</button>
+            <button id="inviteBtn" class="game-btn">📩 Invite by ID</button>
         </div>
 
         <div id="partner-status">
@@ -171,6 +252,19 @@
             <div class="joystick-knob" id="knob"></div>
         </div>
     </div>
+    </div>
+
+    <!-- Invite Modal -->
+    <div id="inviteModal" class="invite-modal">
+        <div class="invite-modal-content">
+            <h3>📩 Invite to Playground</h3>
+            <p style="color: #666; font-size: 14px; margin: 0 0 10px 0;">Enter the User ID of the person you want to invite:</p>
+            <input type="text" id="inviteUserIdInput" placeholder="Enter User ID (e.g., 9X2A1M)" autocomplete="off">
+            <div class="invite-modal-buttons">
+                <button class="btn-secondary" id="cancelInviteBtn">Cancel</button>
+                <button class="btn-primary" id="sendInviteBtn">Send Invite</button>
+            </div>
+        </div>
     </div>
 
     <script src="playground.js"></script>

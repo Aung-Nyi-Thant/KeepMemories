@@ -115,11 +115,19 @@ async function loadProfile() {
         const result = await response.json();
 
         if (result.success) {
-            const username = localStorage.getItem('currentUsername') || 'Friend';
-
             document.getElementById('profileUsername').textContent = username;
             document.getElementById('userId').textContent = result.myId;
-            document.getElementById('avatarInitial').textContent = username.charAt(0).toUpperCase();
+
+            // Set Avatar Image based on gender
+            const avatarCircle = document.getElementById('avatarInitial');
+            const gender = result.gender;
+            if (gender === 'Male') {
+                avatarCircle.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            } else if (gender === 'Female') {
+                avatarCircle.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            } else {
+                avatarCircle.textContent = username.charAt(0).toUpperCase();
+            }
 
             // Sync Admin Status
             const isSystemAdmin = result.isAdmin || username === 'Aung Nyi Nyi Thant' || username.toLowerCase() === 'admin';

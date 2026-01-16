@@ -184,16 +184,29 @@ async function loadDashboardData() {
                 document.getElementById('displayPartner').textContent = result.partnerName;
 
                 // Update Popup Data
-                const partnerInitial = result.partnerName.charAt(0).toUpperCase() || '?';
-                document.querySelector('#heartPopup .avatar-circle').textContent = partnerInitial;
+                const partnerAvatar = document.querySelector('#heartPopup .avatar-circle');
+                if (result.partnerGender === 'Male') {
+                    partnerAvatar.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else if (result.partnerGender === 'Female') {
+                    partnerAvatar.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else {
+                    partnerAvatar.textContent = result.partnerName.charAt(0).toUpperCase() || '?';
+                }
+
                 document.getElementById('popupInfo').textContent = `Connected with ${result.partnerName}`;
                 document.getElementById('popupStatus').textContent = "Forever & Always 💕";
             } else {
                 document.getElementById('partnerSection').style.display = 'none';
 
                 // Single State Popup
-                const myInitial = (result.username && result.username.charAt(0).toUpperCase()) || 'F';
-                document.querySelector('#heartPopup .avatar-circle').textContent = myInitial;
+                const myAvatar = document.querySelector('#heartPopup .avatar-circle');
+                if (result.gender === 'Male') {
+                    myAvatar.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else if (result.gender === 'Female') {
+                    myAvatar.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else {
+                    myAvatar.textContent = (result.username && result.username.charAt(0).toUpperCase()) || 'F';
+                }
                 document.getElementById('popupInfo').textContent = "Waiting for a Partner";
                 document.getElementById('popupStatus').textContent = "Invite someone special! 💌";
             }

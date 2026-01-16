@@ -297,10 +297,10 @@ body:not(.dashboard-body) {
 .polaroid {
     background: white;
     padding: 10px 10px 30px 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     transform: rotate(-2deg);
-    transition: transform 0.3s;
-    animation: fadeIn 0.3s ease;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: slideUpFade 0.6s ease-out;
 }
 
 .polaroid:nth-child(even) {
@@ -308,8 +308,9 @@ body:not(.dashboard-body) {
 }
 
 .polaroid:hover {
-    transform: scale(1.05) rotate(0);
-    z-index: 2;
+    transform: scale(1.08) rotate(0) translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    z-index: 10;
 }
 
 .polaroid img {
@@ -846,6 +847,12 @@ body:not(.dashboard-body) {
     font-size: 2rem;
     border: 3px solid white;
     box-shadow: 0 5px 15px var(--shadow-color);
+    overflow: hidden;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.heart-popup .avatar-circle:hover {
+    transform: scale(1.1);
 }
 
 .close-popup {

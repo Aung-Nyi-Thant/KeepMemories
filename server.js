@@ -231,6 +231,7 @@ app.get('/api/data/:userId', authenticate, (req, res) => {
         gender: user.gender,
         isAdmin: !!user.isAdmin || (user.username.toLowerCase() === 'admin' || user.username === 'Aung Nyi Nyi Thant'),
         partnerName: partnerName,
+        partnerGender: user.partnerId ? db.users[user.partnerId]?.gender : null,
         myId: userId
     });
 });

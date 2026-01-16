@@ -113,8 +113,14 @@ function renderTable(users) {
 }
 
 function showUserDetails(user) {
-    const modal = document.getElementById('userModal');
-    if (!modal) return;
+    const avatarCircle = document.getElementById('modalAvatar');
+    if (user.gender === 'Male') {
+        avatarCircle.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    } else if (user.gender === 'Female') {
+        avatarCircle.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    } else {
+        avatarCircle.textContent = '👤';
+    }
 
     document.getElementById('detailUserId').textContent = user.id;
     document.getElementById('modalUserName').textContent = user.username;

@@ -42,7 +42,11 @@ let db = {
 
 if (fs.existsSync(DB_FILE)) {
     try {
-        db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+        const loadedData = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+        db = { ...db, ...loadedData }; // Merge loaded data with defaults
+
+        // Ensure playground exists even if not in the file
+        if (!db.playground) db.playground = {};
     } catch (err) {
         console.error("Error reading DB, starting fresh.");
     }

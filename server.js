@@ -228,6 +228,7 @@ app.get('/api/data/:userId', authenticate, (req, res) => {
         success: true,
         data: spaceData,
         username: user.username,
+        gender: user.gender,
         isAdmin: !!user.isAdmin || (user.username.toLowerCase() === 'admin' || user.username === 'Aung Nyi Nyi Thant'),
         partnerName: partnerName,
         myId: userId

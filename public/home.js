@@ -541,3 +541,22 @@ async function updateUserGender(gender) {
         showToast("Connection error", 'error');
     }
 }
+
+function showToast(message, type = 'success') {
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+    const icon = type === 'success' ? '🎉' : '⚠️';
+    toast.innerHTML = `<span class="toast-icon">${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+}

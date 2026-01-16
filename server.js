@@ -22,7 +22,7 @@ app.use(helmet({
         directives: {
             "default-src": ["'self'"],
             "script-src": ["'self'", "https://cdn.jsdelivr.net"],
-            "img-src": ["'self'", "data:", "https://*"],
+            "img-src": ["'self'", "data:", "blob:", "https://*"],
             "style-src": ["'self'", "'unsafe-inline'"],
         },
     },

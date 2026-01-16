@@ -98,7 +98,7 @@ function authenticate(req, res, next) {
 
 // 1. REGISTER
 app.post('/api/register', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, gender } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({ error: "Username and password required" });
@@ -122,6 +122,7 @@ app.post('/api/register', async (req, res) => {
         id: userId,
         username,
         passwordHash, // Store hash, not plain text
+        gender: gender || null,
         spaceId,
         partnerId: null,
         createdAt: Date.now(),
@@ -176,6 +177,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
             success: true,
             userId: user.id,
             username: user.username,
+            gender: user.gender,
             partnerId: user.partnerId,
             isAdmin: !!user.isAdmin || (user.username.toLowerCase() === 'admin' || user.username === 'Aung Nyi Nyi Thant'),
             token: token
@@ -427,6 +429,43 @@ app.get('/api/admin/users', authenticate, (req, res) => {
     });
 
     res.json({ success: true, users: userList });
+});
+
+// 8. USER GENDER UPDATE
+app.post('/api/user/update-gender', authenticate, (req, res) => {
+    const { gender } = req.body;
+    const user = db.users[req.user.userId];
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!['Male', 'Female', 'Other'].includes(gender)) {
+        return res.status(400).json({ error: "Invalid gender selection" });
+    }
+
+    user.gender = gender;
+    saveDB();
+    res.json({ success: true, message: "Gender updated successfully" });
+});
+
+// 9. ADMIN UPDATE USER GENDER
+app.post('/api/admin/update-user-gender', authenticate, (req, res) => {
+    const requestUser = db.users[req.user.userId];
+    const isSystemAdmin = requestUser && (requestUser.isAdmin || requestUser.username.toLowerCase() === 'admin' || requestUser.username === 'Aung Nyi Nyi Thant');
+
+    if (!requestUser || !isSystemAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const { targetUserId, gender } = req.body;
+    const targetUser = db.users[targetUserId];
+
+    if (!targetUser) return res.status(404).json({ error: "Target user not found" });
+    if (gender !== null && !['Male', 'Female', 'Other'].includes(gender)) {
+        return res.status(400).json({ error: "Invalid gender selection" });
+    }
+
+    targetUser.gender = (gender === "null" || gender === null) ? null : gender;
+    saveDB();
+    res.json({ success: true, message: "User gender updated by admin" });
 });
 
 // Start Server

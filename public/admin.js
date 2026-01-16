@@ -135,7 +135,44 @@ function showUserDetails(user) {
     document.getElementById('detailCreated').textContent = createdDate;
     document.getElementById('detailActive').textContent = activeDate;
 
+    document.getElementById('detailActive').textContent = activeDate;
+
+    // Gender Select
+    const genderSelect = document.getElementById('detailGenderSelect');
+    genderSelect.value = user.gender || "null";
+
+    const updateGenderBtn = document.getElementById('updateGenderBtn');
+    // Clear old listeners if any (by replacing node or just reassignment)
+    updateGenderBtn.onclick = () => {
+        adminUpdateUserGender(user.id, genderSelect.value);
+    };
+
     // Show it
     const overlay = document.getElementById('userModalOverlay');
     if (overlay) overlay.style.display = 'flex';
+}
+
+async function adminUpdateUserGender(targetUserId, gender) {
+    const token = localStorage.getItem('authToken');
+    try {
+        const response = await fetch(`${API_URL}/admin/update-user-gender`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ targetUserId, gender: (gender === "null" ? null : gender) })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert("User gender updated!");
+            loadUsers(); // Refresh table
+        } else {
+            alert("Update failed: " + result.error);
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Server error");
+    }
 }

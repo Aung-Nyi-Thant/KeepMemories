@@ -117,6 +117,17 @@
                 <p><strong>Partner:</strong> <span id="detailPartner"></span></p>
                 <p><strong>Created:</strong> <span id="detailCreated"></span></p>
                 <p><strong>Last Active:</strong> <span id="detailActive"></span></p>
+                <p><strong>Gender:</strong>
+                    <select id="detailGenderSelect"
+                        style="padding: 4px; border-radius: 8px; border: 1px solid #ddd; margin-left: 5px;">
+                        <option value="null">Not Set</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <button id="updateGenderBtn" class="action-btn"
+                        style="padding: 5px 10px; font-size: 0.8rem; margin-top: 5px; width: auto; background: var(--bg-gradient); color: white;">Update</button>
+                </p>
             </div>
             <button class="close-popup" id="closeUserModal">Close Detail</button>
         </div>

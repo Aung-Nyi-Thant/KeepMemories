@@ -132,6 +132,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- GENDER POPUP LISTENERS ---
+    const genderBtns = document.querySelectorAll('.gender-btn');
+    genderBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const gender = btn.getAttribute('data-gender');
+            updateUserGender(gender);
+        });
+    });
 });
 
 
@@ -188,6 +196,13 @@ async function loadDashboardData() {
                 document.querySelector('#heartPopup .avatar-circle').textContent = myInitial;
                 document.getElementById('popupInfo').textContent = "Waiting for a Partner";
                 document.getElementById('popupStatus').textContent = "Invite someone special! 💌";
+            }
+
+            // Gender Check
+            if (!result.gender) {
+                setTimeout(() => {
+                    document.getElementById('genderPopup').classList.add('show');
+                }, 1000);
             }
 
             renderAll();
@@ -500,3 +515,29 @@ window.toggleHeartPopup = (show) => {
         popup.classList.remove('show');
     }
 };
+async function updateUserGender(gender) {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_URL}/user/update-gender`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ gender })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById('genderPopup').classList.remove('show');
+            showToast("Profile updated!", 'success');
+            // Refresh data to ensure gender is now set
+            loadDashboardData();
+        } else {
+            showToast(result.error || "Failed to update", 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast("Connection error", 'error');
+    }
+}

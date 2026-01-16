@@ -57,8 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isLoginMode = true;
     const toggleLink = document.getElementById('toggleMode');
     const submitBtn = loginForm.querySelector('.login-btn');
-    const headerTitle = document.querySelector('.card-header h1');
     const headerMsg = document.querySelector('.card-header p');
+    const genderGroup = document.getElementById('genderGroup');
 
     toggleLink.addEventListener('click', (e) => {
         e.preventDefault();
@@ -68,11 +68,13 @@ document.addEventListener('DOMContentLoaded', () => {
             headerMsg.innerHTML = "We missed you &#10084;";
             submitBtn.innerText = "Let me in!";
             toggleLink.innerText = "Create an account";
+            genderGroup.style.display = 'none';
         } else {
             headerTitle.textContent = "Join Us!";
             headerMsg.innerHTML = "Start keeping memories &#10084;";
             submitBtn.innerText = "Sign Up";
             toggleLink.innerText = "Already have an account?";
+            genderGroup.style.display = 'block';
         }
     });
 
@@ -80,12 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value; // In a real app, hash this!
+        const password = document.getElementById('password').value;
+        const gender = document.getElementById('genderSelect').value;
 
         // Use password field as 'password' for registration if needed, or simplistic check
         // For this demo, let's assume the password field is robust enough for both.
 
-        if (!username || !password) {
+        if (!username || !password || (!isLoginMode && !gender)) {
             showToast("Please fill in all fields!", 'error');
             return;
         }
@@ -99,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password, gender })
             });
             const result = await response.json();
 

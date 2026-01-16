@@ -307,7 +307,14 @@ function updatePartnerStatus(online) {
     }
 }
 
-// Invite Logic
+// Button Logic (Navigation & Invites)
+const homeBtn = document.getElementById('homeBtn');
+if (homeBtn) {
+    homeBtn.addEventListener('click', () => {
+        window.location.href = 'home.html';
+    });
+}
+
 const inviteBtn = document.getElementById('inviteBtn');
 if (inviteBtn) {
     inviteBtn.addEventListener('click', async () => {

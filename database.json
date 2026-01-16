@@ -3,17 +3,17 @@
     "LMQ8KI": {
       "id": "LMQ8KI",
       "username": "Aung Nyi Nyi Thant",
-      "password": "Accmobile",
       "spaceId": "SPACE_LMQ8KI",
       "partnerId": null,
-      "pendingInvite": null
+      "pendingInvite": null,
+      "passwordHash": "$2b$10$F0EbF0xlA/omx/r3uVih8Ofw/zMJ4kjCzvrEdEujD53aaYb7DSlAu"
     },
     "D5QDJP": {
       "id": "D5QDJP",
       "username": "Someone",
-      "password": "123456",
       "spaceId": "SPACE_D5QDJP",
-      "partnerId": null
+      "partnerId": null,
+      "passwordHash": "$2b$10$dHEhZd5yfUWTn.l0pTPRWu/RGaJF1xxac7ocxscXdVpIwg1ie9NJS"
     }
   },
   "spaces": {

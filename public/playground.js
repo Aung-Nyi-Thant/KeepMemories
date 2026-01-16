@@ -103,8 +103,8 @@ function create() {
     const spritePrefix = (gender === 'Female' ? 'girl' : 'boy');
     player = this.physics.add.sprite(400, 550, spritePrefix + '_idle');
     player.setCollideWorldBounds(true);
-    player.setCircle(20, 15, 35); // Adjust hitbox for sprite feet
-    player.setDisplaySize(70, 70);
+    player.setCircle(15, 10, 40); // Hitbox for small sprite feet
+    player.setDisplaySize(50, 50);
     player.username = localStorage.getItem('currentUsername') || 'You';
     player.facing = 'down';
     player.spritePrefix = spritePrefix;
@@ -124,7 +124,7 @@ function create() {
     // 4. Partner initialization
     const partnerPrefix = (gender === 'Female' ? 'boy' : 'girl');
     partner = this.physics.add.sprite(-100, -100, partnerPrefix + '_idle');
-    partner.setDisplaySize(70, 70);
+    partner.setDisplaySize(50, 50);
     partner.setVisible(false);
     partner.spritePrefix = partnerPrefix;
     partner.nameText = this.add.text(-100, -150, 'Partner', {
@@ -199,7 +199,7 @@ function update() {
     }
 
     // Update name label position
-    player.nameText.setPosition(player.x, player.y - 45 + player.yOffset);
+    player.nameText.setPosition(player.x, player.y - 35 + player.yOffset);
 
     // Partner Interpolation
     if (partner.active && partner.targetX) {
@@ -220,7 +220,7 @@ function update() {
         }
 
         partner.y += bob; // Visual only
-        partner.nameText.setPosition(partner.x, partner.y - 45);
+        partner.nameText.setPosition(partner.x, partner.y - 35);
     } else {
         partner.setVisible(false);
         partner.nameText.setVisible(false);

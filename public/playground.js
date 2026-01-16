@@ -40,14 +40,14 @@ function preload() {
     this.load.image('boy_up1', 'assets/boy_up1.png');
     this.load.image('boy_up2', 'assets/boy_up2.png');
 
-    // Girl uses same frames for now (can be replaced later)
-    this.load.image('girl_idle', 'assets/boy_idle.png');
-    this.load.image('girl_down1', 'assets/boy_down1.png');
-    this.load.image('girl_down2', 'assets/boy_front.png');
-    this.load.image('girl_right1', 'assets/boy_right1.png');
-    this.load.image('girl_right2', 'assets/boy_right2.png');
-    this.load.image('girl_up1', 'assets/boy_up1.png');
-    this.load.image('girl_up2', 'assets/boy_up2.png');
+    // Girl character frames (individual images)
+    this.load.image('girl_idle', 'assets/girl_idle.png');
+    this.load.image('girl_down1', 'assets/girl_down1.png');
+    this.load.image('girl_down2', 'assets/girl_down2.png');
+    this.load.image('girl_right1', 'assets/girl_right1.png');
+    this.load.image('girl_right2', 'assets/girl_right2.png');
+    this.load.image('girl_up1', 'assets/girl_up1.png');
+    this.load.image('girl_up2', 'assets/girl_up2.png');
 }
 
 function create() {
@@ -189,16 +189,43 @@ function update() {
         partner.x += (partner.targetX - partner.x) * 0.15;
         partner.y += (partner.targetY - partner.y) * 0.15;
 
-        // Partner bobbing based on movement speed
-        const dist = Phaser.Math.Distance.Between(partner.x, partner.y, partner.targetX, partner.targetY);
-        let bob = 0;
-        if (dist > 2) {
-            bob = Math.sin(this.time.now / 100) * 5;
+        // Partner Animation logic
+        const dx = partner.targetX - partner.x;
+        const dy = partner.targetY - partner.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > 5) { // Moving
+            let partnerDir = 'down';
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 0) {
+                    partnerDir = 'right';
+                    partner.setFlipX(false);
+                } else {
+                    partnerDir = 'right';
+                    partner.setFlipX(true);
+                }
+            } else {
+                partnerDir = dy > 0 ? 'down' : 'up';
+            }
+
+            // Frame switching
+            const now = this.time.now;
+            if (!partner.lastFrameTime) partner.lastFrameTime = 0;
+            if (now - partner.lastFrameTime > frameInterval) {
+                partner.walkFrame = ((partner.walkFrame || 0) + 1) % 2;
+                partner.lastFrameTime = now;
+            }
+            const frameNum = (partner.walkFrame || 0) + 1;
+            partner.setTexture(partner.spritePrefix + '_' + partnerDir + frameNum);
+            partner.yOffset = 0;
         } else {
-            bob = Math.sin(this.time.now / 400) * 2;
+            // Idle
+            partner.setTexture(partner.spritePrefix + '_idle');
+            partner.setFlipX(false);
+            partner.yOffset = Math.sin(this.time.now / 400) * 2;
         }
 
-        partner.y += bob; // Visual only
+        partner.y += partner.yOffset; // Visual bobbing
         partner.nameText.setPosition(partner.x, partner.y - 35);
     } else {
         partner.setVisible(false);
@@ -259,7 +286,8 @@ async function fetchData() {
             partnerId = result.partnerId;
             partner.nameText.setText(result.partnerName || 'Partner');
             if (result.partnerGender) {
-                partner.setTexture(result.partnerGender === 'Female' ? 'girl' : 'boy');
+                partner.spritePrefix = (result.partnerGender === 'Female' ? 'girl' : 'boy');
+                partner.setTexture(partner.spritePrefix + '_idle');
             }
         }
     } catch (e) { }

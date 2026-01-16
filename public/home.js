@@ -181,6 +181,7 @@ async function loadDashboardData() {
 
         if (result.success) {
             localData = result.data;
+            if (result.gender) localStorage.setItem('userGender', result.gender);
 
             // Update Header
             document.getElementById('displayUsername').textContent = result.username || 'Friend';

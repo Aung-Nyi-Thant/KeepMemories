@@ -8,6 +8,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loadUsers();
+
+    // Close Modal Logic
+    const userModalOverlay = document.getElementById('userModalOverlay');
+    const closeUserModal = document.getElementById('closeUserModal');
+    if (closeUserModal && userModalOverlay) {
+        closeUserModal.addEventListener('click', () => {
+            userModalOverlay.style.display = 'none';
+        });
+
+        // Close on clicking outside
+        userModalOverlay.addEventListener('click', (e) => {
+            if (e.target === userModalOverlay) {
+                userModalOverlay.style.display = 'none';
+            }
+        });
+    }
 });
 
 async function loadUsers() {
@@ -24,20 +40,23 @@ async function loadUsers() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (response.isAdmin === false) {
+        if (response.status === 403) {
             alert("Access Denied: Admins only! 🚫");
             window.location.href = 'home.html';
             return;
         }
 
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}`);
+        }
+
         const result = await response.json();
 
-        if (result.isAdmin == true) {
+        if (result.success) {
             renderTable(result.users);
-        } else if (result.isAdmin == false) {
-            alert("Access Denied: Admins only! 🚫");
-            window.location.href = 'home.html';
-            return;
+        } else {
+            console.error("Failed to load users:", result.error);
+            tbody.innerHTML = `<tr><td colspan="5">Error: ${result.error || 'Failed to load users'}</td></tr>`;
         }
     } catch (err) {
         console.error(err);
@@ -84,5 +103,39 @@ function renderTable(users) {
         `;
 
         tbody.appendChild(tr);
+
+        // Click to show details
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', () => {
+            showUserDetails(user);
+        });
     });
+}
+
+function showUserDetails(user) {
+    const modal = document.getElementById('userModal');
+    if (!modal) return;
+
+    document.getElementById('detailUserId').textContent = user.id;
+    document.getElementById('modalUserName').textContent = user.username;
+    document.getElementById('detailRole').textContent = user.isAdmin ? 'Administrator 👑' : 'Standard User';
+
+    // Partner info
+    const partnerSpan = document.getElementById('detailPartner');
+    if (user.partnerId) {
+        partnerSpan.textContent = `${user.partnerName} (ID: ${user.partnerId})`;
+    } else {
+        partnerSpan.textContent = 'None (Single)';
+    }
+
+    // Dates
+    const createdDate = user.createdAt ? new Date(user.createdAt).toLocaleString() : 'Legacy Account';
+    const activeDate = user.lastActive ? new Date(user.lastActive).toLocaleString() : 'Never';
+
+    document.getElementById('detailCreated').textContent = createdDate;
+    document.getElementById('detailActive').textContent = activeDate;
+
+    // Show it
+    const overlay = document.getElementById('userModalOverlay');
+    if (overlay) overlay.style.display = 'flex';
 }

@@ -50,10 +50,24 @@ async function saveDB() {
 const INITIAL_PET = { name: "Lovebug", level: 3, exp: 0, mood: "Happy", lastFed: 0 };
 const INITIAL_SUNFLOWER = { name: "Sunny", level: 1, exp: 0, stage: "Seed", lastWatered: 0, lastFertilized: 0 };
 
-// --- HELPER FUNCTIONS ---
-function generateId() {
-    return Math.random().toString(36).substr(2, 6).toUpperCase();
+// --- PASSWORD MIGRATION ---
+async function migratePasswords() {
+    let migratedCount = 0;
+    for (const userId in db.users) {
+        const user = db.users[userId];
+        if (user.password && !user.passwordHash) {
+            console.log(`Migrating password for user: ${user.username}`);
+            user.passwordHash = await bcrypt.hash(user.password, 10);
+            delete user.password; // Remove plain text password
+            migratedCount++;
+        }
+    }
+    if (migratedCount > 0) {
+        saveDB();
+        console.log(`✅ Successfully migrated ${migratedCount} passwords to hashes.`);
+    }
 }
+migratePasswords();
 
 // --- MIDDLEWARE ---
 function authenticate(req, res, next) {
@@ -152,15 +166,8 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Compare Password (support both legacy plain text for old accounts and new hashes)
-    let validPass = false;
-    if (user.passwordHash) {
-        validPass = await bcrypt.compare(password, user.passwordHash);
-    } else if (user.password) {
-        // Fallback for old accounts (plaintext)
-        validPass = (user.password === password);
-        // Optional: Upgrade to hash on next login?
-    }
+    // Verify password against hash
+    const validPass = await bcrypt.compare(password, user.passwordHash || "");
 
     if (validPass) {
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
@@ -403,13 +410,21 @@ app.get('/api/admin/users', authenticate, (req, res) => {
         return res.status(403).json({ error: "Admin access required" });
     }
 
-    const userList = Object.values(db.users).map(u => ({
-        id: u.id,
-        username: u.username,
-        createdAt: u.createdAt || 0,
-        lastActive: u.lastActive || 0,
-        isAdmin: !!u.isAdmin
-    }));
+    const userList = Object.values(db.users).map(u => {
+        let partnerName = null;
+        if (u.partnerId) {
+            partnerName = db.users[u.partnerId]?.username || "Unknown";
+        }
+        return {
+            id: u.id,
+            username: u.username,
+            createdAt: u.createdAt || 0,
+            lastActive: u.lastActive || 0,
+            isAdmin: !!u.isAdmin,
+            partnerId: u.partnerId || null,
+            partnerName: partnerName
+        };
+    });
 
     res.json({ success: true, users: userList });
 });

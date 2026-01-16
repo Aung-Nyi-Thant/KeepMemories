@@ -28,10 +28,18 @@ let token = localStorage.getItem('authToken');
 let API_URL = '/api';
 
 function preload() {
-    // Relative paths to public/assets
+    // Background
     this.load.image('bg', 'assets/playground_bg.png');
-    this.load.image('boy', 'assets/boy_pixel.png');
-    this.load.image('girl', 'assets/girl_pixel.png');
+
+    // Character spritesheets (3 columns x 4 rows, ~48x64 per frame)
+    this.load.spritesheet('boy', 'assets/boy_spritesheet.png', {
+        frameWidth: 48,
+        frameHeight: 64
+    });
+    this.load.spritesheet('girl', 'assets/girl_spritesheet.png', {
+        frameWidth: 48,
+        frameHeight: 64
+    });
 }
 
 function create() {
@@ -68,14 +76,65 @@ function create() {
     obstacles.add(this.add.zone(315, 720, 250, 100));   // Bottom-Center Flower Bed
     obstacles.add(this.add.zone(75, 715, 60, 100));     // Bottom-Left Tree Trunk
 
+    // === USER-SPECIFIED ZONES (scaled from original coords) ===
+    // Original coords were larger, scaled down by ~0.7x for 800x800 canvas
+    obstacles.add(this.add.zone(427, 116, 80, 80));   // Zone 1
+    obstacles.add(this.add.zone(595, 102, 80, 80));   // Zone 2
+    obstacles.add(this.add.zone(795, 144, 80, 80));   // Zone 3
+    obstacles.add(this.add.zone(403, 207, 80, 80));   // Zone 4
+    obstacles.add(this.add.zone(392, 294, 80, 80));   // Zone 5
+    obstacles.add(this.add.zone(532, 329, 80, 80));   // Zone 6
+    obstacles.add(this.add.zone(630, 252, 80, 80));   // Zone 7
+    obstacles.add(this.add.zone(508, 434, 80, 80));   // Zone 8
+    obstacles.add(this.add.zone(711, 410, 80, 80));   // Zone 9
+    obstacles.add(this.add.zone(788, 427, 80, 80));   // Zone 10
+
 
     // 3. Player initialization
     const gender = localStorage.getItem('userGender') || 'Male';
-    player = this.physics.add.sprite(400, 550, (gender === 'Female' ? 'girl' : 'boy'));
+    const spriteKey = (gender === 'Female' ? 'girl' : 'boy');
+    player = this.physics.add.sprite(400, 550, spriteKey, 0);
     player.setCollideWorldBounds(true);
-    player.setCircle(15, 20, 35); // Adjust for pixel sprite feet
+    player.setCircle(15, 17, 40); // Adjust hitbox for sprite feet
     player.setDisplaySize(70, 70);
     player.username = localStorage.getItem('currentUsername') || 'You';
+    player.facing = 'down'; // Track facing direction
+
+    // Create walking animations (based on spritesheet layout)
+    // Row 0: Static poses (frames 0, 1, 2)
+    // Row 1: Walk Down (frames 3, 4, 5)
+    // Row 2: Walk Right (frames 6, 7, 8)
+    // Row 3: Walk Up/Back (frames 9, 10, 11)
+
+    this.anims.create({
+        key: 'walk-down',
+        frames: this.anims.generateFrameNumbers(spriteKey, { start: 3, end: 5 }),
+        frameRate: 8,
+        repeat: -1
+    });
+    this.anims.create({
+        key: 'walk-right',
+        frames: this.anims.generateFrameNumbers(spriteKey, { start: 6, end: 8 }),
+        frameRate: 8,
+        repeat: -1
+    });
+    this.anims.create({
+        key: 'walk-up',
+        frames: this.anims.generateFrameNumbers(spriteKey, { start: 9, end: 11 }),
+        frameRate: 8,
+        repeat: -1
+    });
+    this.anims.create({
+        key: 'walk-left',
+        frames: this.anims.generateFrameNumbers(spriteKey, { start: 6, end: 8 }),
+        frameRate: 8,
+        repeat: -1
+    });
+    this.anims.create({
+        key: 'idle',
+        frames: [{ key: spriteKey, frame: 1 }],
+        frameRate: 1
+    });
 
     // Player Text
     player.nameText = this.add.text(400, 500, player.username, {
@@ -88,7 +147,7 @@ function create() {
     }).setOrigin(0.5);
 
     // 4. Partner initialization
-    partner = this.physics.add.sprite(-100, -100, 'girl');
+    partner = this.physics.add.sprite(-100, -100, 'girl', 0);
     partner.setDisplaySize(70, 70);
     partner.setVisible(false);
     partner.nameText = this.add.text(-100, -150, 'Partner', {
@@ -118,10 +177,35 @@ function update() {
         player.setVelocityX(joystick.x * speed);
         player.setVelocityY(joystick.y * speed);
 
-        // Bobbing effect while walking
-        player.yOffset = Math.sin(this.time.now / 100) * 5;
+        // Determine facing direction based on joystick input
+        if (Math.abs(joystick.x) > Math.abs(joystick.y)) {
+            // Horizontal movement dominates
+            if (joystick.x > 0) {
+                player.facing = 'right';
+                player.setFlipX(false);
+                player.anims.play('walk-right', true);
+            } else {
+                player.facing = 'left';
+                player.setFlipX(true); // Mirror the right-walk animation
+                player.anims.play('walk-left', true);
+            }
+        } else {
+            // Vertical movement dominates
+            if (joystick.y > 0) {
+                player.facing = 'down';
+                player.setFlipX(false);
+                player.anims.play('walk-down', true);
+            } else {
+                player.facing = 'up';
+                player.setFlipX(false);
+                player.anims.play('walk-up', true);
+            }
+        }
+
+        player.yOffset = 0; // Animations handle movement feel
     } else {
         player.setVelocity(0);
+        player.anims.play('idle', true);
         player.yOffset = Math.sin(this.time.now / 400) * 2; // Breathing idle
     }
 

@@ -31,15 +31,23 @@ function preload() {
     // Background
     this.load.image('bg', 'assets/playground_bg.png');
 
-    // Character spritesheets (3 columns x 4 rows, ~48x64 per frame)
-    this.load.spritesheet('boy', 'assets/boy_spritesheet.png', {
-        frameWidth: 48,
-        frameHeight: 64
-    });
-    this.load.spritesheet('girl', 'assets/girl_spritesheet.png', {
-        frameWidth: 48,
-        frameHeight: 64
-    });
+    // Boy character frames (individual images)
+    this.load.image('boy_idle', 'assets/boy_idle.png');
+    this.load.image('boy_down1', 'assets/boy_down1.png');
+    this.load.image('boy_down2', 'assets/boy_front.png');
+    this.load.image('boy_right1', 'assets/boy_right1.png');
+    this.load.image('boy_right2', 'assets/boy_right2.png');
+    this.load.image('boy_up1', 'assets/boy_up1.png');
+    this.load.image('boy_up2', 'assets/boy_up2.png');
+
+    // Girl uses same frames for now (can be replaced later)
+    this.load.image('girl_idle', 'assets/boy_idle.png');
+    this.load.image('girl_down1', 'assets/boy_down1.png');
+    this.load.image('girl_down2', 'assets/boy_front.png');
+    this.load.image('girl_right1', 'assets/boy_right1.png');
+    this.load.image('girl_right2', 'assets/boy_right2.png');
+    this.load.image('girl_up1', 'assets/boy_up1.png');
+    this.load.image('girl_up2', 'assets/boy_up2.png');
 }
 
 function create() {
@@ -92,49 +100,16 @@ function create() {
 
     // 3. Player initialization
     const gender = localStorage.getItem('userGender') || 'Male';
-    const spriteKey = (gender === 'Female' ? 'girl' : 'boy');
-    player = this.physics.add.sprite(400, 550, spriteKey, 0);
+    const spritePrefix = (gender === 'Female' ? 'girl' : 'boy');
+    player = this.physics.add.sprite(400, 550, spritePrefix + '_idle');
     player.setCollideWorldBounds(true);
-    player.setCircle(15, 17, 40); // Adjust hitbox for sprite feet
+    player.setCircle(20, 15, 35); // Adjust hitbox for sprite feet
     player.setDisplaySize(70, 70);
     player.username = localStorage.getItem('currentUsername') || 'You';
-    player.facing = 'down'; // Track facing direction
-
-    // Create walking animations (based on spritesheet layout)
-    // Row 0: Static poses (frames 0, 1, 2)
-    // Row 1: Walk Down (frames 3, 4, 5)
-    // Row 2: Walk Right (frames 6, 7, 8)
-    // Row 3: Walk Up/Back (frames 9, 10, 11)
-
-    this.anims.create({
-        key: 'walk-down',
-        frames: this.anims.generateFrameNumbers(spriteKey, { start: 3, end: 5 }),
-        frameRate: 8,
-        repeat: -1
-    });
-    this.anims.create({
-        key: 'walk-right',
-        frames: this.anims.generateFrameNumbers(spriteKey, { start: 6, end: 8 }),
-        frameRate: 8,
-        repeat: -1
-    });
-    this.anims.create({
-        key: 'walk-up',
-        frames: this.anims.generateFrameNumbers(spriteKey, { start: 9, end: 11 }),
-        frameRate: 8,
-        repeat: -1
-    });
-    this.anims.create({
-        key: 'walk-left',
-        frames: this.anims.generateFrameNumbers(spriteKey, { start: 6, end: 8 }),
-        frameRate: 8,
-        repeat: -1
-    });
-    this.anims.create({
-        key: 'idle',
-        frames: [{ key: spriteKey, frame: 1 }],
-        frameRate: 1
-    });
+    player.facing = 'down';
+    player.spritePrefix = spritePrefix;
+    player.walkFrame = 0;
+    player.lastFrameTime = 0;
 
     // Player Text
     player.nameText = this.add.text(400, 500, player.username, {
@@ -147,9 +122,11 @@ function create() {
     }).setOrigin(0.5);
 
     // 4. Partner initialization
-    partner = this.physics.add.sprite(-100, -100, 'girl', 0);
+    const partnerPrefix = (gender === 'Female' ? 'boy' : 'girl');
+    partner = this.physics.add.sprite(-100, -100, partnerPrefix + '_idle');
     partner.setDisplaySize(70, 70);
     partner.setVisible(false);
+    partner.spritePrefix = partnerPrefix;
     partner.nameText = this.add.text(-100, -150, 'Partner', {
         fontSize: '16px',
         color: '#ffffff',
@@ -171,41 +148,53 @@ function create() {
 
 function update() {
     const speed = 250;
+    const frameInterval = 150; // Milliseconds between frame switches
 
     // Movement Logic
     if (joystick.active && (Math.abs(joystick.x) > 0.1 || Math.abs(joystick.y) > 0.1)) {
         player.setVelocityX(joystick.x * speed);
         player.setVelocityY(joystick.y * speed);
 
-        // Determine facing direction based on joystick input
+        // Determine facing direction and play walk animation
+        let directionKey = '';
         if (Math.abs(joystick.x) > Math.abs(joystick.y)) {
-            // Horizontal movement dominates
+            // Horizontal movement
             if (joystick.x > 0) {
                 player.facing = 'right';
                 player.setFlipX(false);
-                player.anims.play('walk-right', true);
+                directionKey = 'right';
             } else {
                 player.facing = 'left';
-                player.setFlipX(true); // Mirror the right-walk animation
-                player.anims.play('walk-left', true);
+                player.setFlipX(true); // Mirror the right frames
+                directionKey = 'right'; // Use right frames, flipped
             }
         } else {
-            // Vertical movement dominates
+            // Vertical movement
             if (joystick.y > 0) {
                 player.facing = 'down';
                 player.setFlipX(false);
-                player.anims.play('walk-down', true);
+                directionKey = 'down';
             } else {
                 player.facing = 'up';
                 player.setFlipX(false);
-                player.anims.play('walk-up', true);
+                directionKey = 'up';
             }
         }
 
-        player.yOffset = 0; // Animations handle movement feel
+        // Animate by switching textures
+        const now = this.time.now;
+        if (now - player.lastFrameTime > frameInterval) {
+            player.walkFrame = (player.walkFrame + 1) % 2;
+            player.lastFrameTime = now;
+        }
+        const frameNum = player.walkFrame + 1;
+        player.setTexture(player.spritePrefix + '_' + directionKey + frameNum);
+
+        player.yOffset = 0;
     } else {
         player.setVelocity(0);
-        player.anims.play('idle', true);
+        player.setTexture(player.spritePrefix + '_idle');
+        player.setFlipX(false);
         player.yOffset = Math.sin(this.time.now / 400) * 2; // Breathing idle
     }
 

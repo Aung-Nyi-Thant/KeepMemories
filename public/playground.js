@@ -400,10 +400,10 @@ function initSocketIO(scene) {
     // Handle playground invitation
     socket.on('playground:invite', (data) => {
         console.log('[Playground] Invitation received:', data);
-        if (confirm(`${data.fromName} is inviting you to join the playground! Join now?`)) {
-            // User can navigate to playground or auto-join if already there
-            updatePartnerStatus(true);
-        }
+        // Auto-accept and connect if already in playground
+        // The server should automatically connect them via the partner connection logic
+        // The partner join event will be handled separately by the server
+        alert(`${data.fromName} invited you to the playground! They should appear in your game shortly. 🎮`);
     });
 
     // Handle invitation success

@@ -163,11 +163,29 @@ let localData = {
 // --- API ACTIONS ---
 
 async function loadDashboardData() {
+    // Initialize popup with default content immediately
+    initializePopup();
+    
     try {
         const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.error("No auth token found");
+            updatePopupError("Please log in again");
+            // Still render with empty data
+            renderAll();
+            return;
+        }
+
+        // Create timeout controller for fetch
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
         const response = await fetch(`${API_URL}/data/${currentUserId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${token}` },
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
 
         // If simple 401/403, force logout
         if (response.status === 401 || response.status === 403) {
@@ -177,10 +195,14 @@ async function loadDashboardData() {
             return;
         }
 
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
         const result = await response.json();
 
         if (result.success) {
-            localData = result.data;
+            localData = result.data || { notes: [], images: [], dates: [], pet: { name: "Lovebug", level: 3 }, sunflower: { name: "Sunny", level: 1 }};
             if (result.gender) localStorage.setItem('userGender', result.gender);
 
             // Update Header
@@ -225,11 +247,45 @@ async function loadDashboardData() {
 
             renderAll();
         } else {
-            console.error("Failed to load data");
+            console.error("Failed to load data:", result.error);
+            updatePopupError("Failed to load data");
+            // Still render with empty/default data so page is usable
+            renderAll();
         }
     } catch (err) {
         console.error("Error connecting to server", err);
+        if (err.name === 'AbortError' || err.message?.includes('timeout')) {
+            updatePopupError("Connection timeout. Please check your internet.");
+        } else {
+            updatePopupError("Connection error. Please try again.");
+        }
+        // Still render with default/empty data so page is usable
+        renderAll();
     }
+}
+
+function initializePopup() {
+    const popupInfo = document.getElementById('popupInfo');
+    const popupStatus = document.getElementById('popupStatus');
+    const avatar = document.querySelector('#heartPopup .avatar-circle');
+    
+    // Set default content that will be updated when data loads
+    if (popupInfo) popupInfo.textContent = "Profile";
+    if (popupStatus) popupStatus.textContent = "Loading your profile...";
+    if (avatar && !avatar.innerHTML.includes('<img')) {
+        avatar.textContent = "👤";
+    }
+}
+
+function updatePopupError(message) {
+    const popupInfo = document.getElementById('popupInfo');
+    const popupStatus = document.getElementById('popupStatus');
+    
+    if (popupInfo) popupInfo.textContent = "Connection Issue";
+    if (popupStatus) popupStatus.textContent = message || "Unable to connect to server";
+    
+    // Don't auto-show the popup on error - user can click heart if they want to see it
+    // The popup should only show when user clicks the heart button
 }
 
 async function saveData(type) {
@@ -271,6 +327,26 @@ async function invitePartner(targetId) {
 async function disconnectPartner() {
 }
 
+async function checkPlaygroundInvite(partnerId) {
+    if (!partnerId) return;
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_URL}/playground/status/${partnerId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json();
+
+        if (result.success && result.invitingPartner) {
+            showToast(`${result.partnerName || 'Your partner'} is in the playground!`, 'success', {
+                label: 'Join 🕹️',
+                action: () => window.location.href = 'playground.html'
+            });
+        }
+    } catch (err) {
+        console.error("Error checking playground status", err);
+    }
+}
+
 async function checkNotifications() {
     try {
         const response = await fetch(`${API_URL}/notifications/${currentUserId}`);
@@ -292,6 +368,9 @@ function showInviteModal(invite) {
 
     nameSpan.textContent = invite.fromName || "A Friend";
     modal.style.display = 'flex';
+    
+    // Store invite data to check for playground status
+    localStorage.setItem('pendingInviteData', JSON.stringify(invite));
 
     acceptBtn.onclick = () => respondToInvite(true);
     declineBtn.onclick = () => respondToInvite(false);
@@ -308,8 +387,33 @@ async function respondToInvite(accept) {
 
         if (result.success) {
             document.getElementById('inviteModal').style.display = 'none';
-            alert(result.message);
-            if (accept) location.reload();
+            if (accept) {
+                // Check if inviter is in playground
+                const inviterId = JSON.parse(localStorage.getItem('pendingInviteData') || '{}').fromId;
+                if (inviterId) {
+                    // Check if they're in playground
+                    const token = localStorage.getItem('authToken');
+                    try {
+                        const playgroundCheck = await fetch(`${API_URL}/playground/status/${inviterId}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const playgroundResult = await playgroundCheck.json();
+                        
+                        if (playgroundResult.success) {
+                            // Inviter is in playground - offer to join
+                            if (confirm(result.message + "\n\nThey're in the playground right now! Join them?")) {
+                                window.location.href = 'playground.html';
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.log("Could not check playground status");
+                    }
+                }
+                location.reload();
+            } else {
+                alert(result.message);
+            }
         } else {
             alert(result.error);
         }
@@ -560,7 +664,7 @@ async function updateUserGender(gender) {
     }
 }
 
-function showToast(message, type = 'success') {
+function showToast(message, type = 'success', button = null) {
     let container = document.querySelector('.toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -570,11 +674,23 @@ function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast-notification ${type}`;
     const icon = type === 'success' ? '🎉' : '⚠️';
-    toast.innerHTML = `<span class="toast-icon">${icon}</span> <span>${message}</span>`;
+
+    let content = `<span class="toast-icon">${icon}</span> <span>${message}</span>`;
+    if (button) {
+        content += `<button class="toast-btn" id="toastActionBtn">${button.label}</button>`;
+    }
+    toast.innerHTML = content;
+
     container.appendChild(toast);
+
+    if (button) {
+        const btn = toast.querySelector('#toastActionBtn');
+        btn.addEventListener('click', button.action);
+    }
+
     requestAnimationFrame(() => toast.classList.add('show'));
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 500);
-    }, 3000);
+    }, button ? 6000 : 3000); // Longer duration if there's a button
 }

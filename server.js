@@ -659,11 +659,19 @@ io.on('connection', (socket) => {
             // Both players join the same room
             const roomName = `playground_${userId < user.partnerId ? userId : user.partnerId}_${userId < user.partnerId ? user.partnerId : userId}`;
             socket.join(roomName);
-            io.to(partnerConnection.socketId).join(roomName);
             
-            // Update partner connection info
+            // Make sure partner is also in the room (update their connection)
+            io.sockets.sockets.get(partnerConnection.socketId)?.join(roomName);
+            
+            // Update both connection info
             partnerConnection.room = roomName;
             playgroundConnections.set(user.partnerId, partnerConnection);
+            
+            const currentConnection = playgroundConnections.get(userId);
+            if (currentConnection) {
+                currentConnection.room = roomName;
+                playgroundConnections.set(userId, currentConnection);
+            }
             
             // Notify partner that user joined
             io.to(partnerConnection.socketId).emit('playground:partnerJoined', {
@@ -707,37 +715,54 @@ io.on('connection', (socket) => {
     
     // Check if partner was waiting for this user
     if (user.partnerId) {
-        // Look for waiting partner connections
-        for (const [waitingUserId, conn] of playgroundConnections.entries()) {
-            if (conn.partnerId === userId && waitingUserId !== userId) {
-                // Partner was waiting, now both are connected
-                const waitingSocket = io.sockets.sockets.get(conn.socketId);
-                if (waitingSocket) {
-                    const roomName = `playground_${userId < waitingUserId ? userId : waitingUserId}_${userId < waitingUserId ? waitingUserId : userId}`;
-                    socket.join(roomName);
-                    waitingSocket.join(roomName);
-                    waitingSocket.leave(`playground_waiting_${waitingUserId}`);
-                    
-                    // Notify both users
-                    socket.emit('playground:partnerJoined', {
-                        userId: waitingUserId,
-                        username: conn.username,
-                        gender: db.users[waitingUserId]?.gender
+        const waitingPartnerConnection = playgroundConnections.get(user.partnerId);
+        if (waitingPartnerConnection && waitingPartnerConnection.room?.includes('waiting')) {
+            // Partner was waiting, now both are connected
+            const waitingSocket = io.sockets.sockets.get(waitingPartnerConnection.socketId);
+            if (waitingSocket) {
+                const roomName = `playground_${userId < user.partnerId ? userId : user.partnerId}_${userId < user.partnerId ? user.partnerId : userId}`;
+                
+                // Leave waiting room and join together room
+                socket.join(roomName);
+                waitingSocket.join(roomName);
+                waitingSocket.leave(`playground_waiting_${user.partnerId}`);
+                
+                // Update connection info
+                waitingPartnerConnection.room = roomName;
+                playgroundConnections.set(user.partnerId, waitingPartnerConnection);
+                
+                const currentConnection = playgroundConnections.get(userId);
+                if (currentConnection) {
+                    currentConnection.room = roomName;
+                    playgroundConnections.set(userId, currentConnection);
+                }
+                
+                // Notify both users
+                socket.emit('playground:partnerJoined', {
+                    userId: user.partnerId,
+                    username: waitingPartnerConnection.username,
+                    gender: db.users[user.partnerId]?.gender
+                });
+                waitingSocket.emit('playground:partnerJoined', {
+                    userId: userId,
+                    username: user.username,
+                    gender: user.gender
+                });
+                
+                // Send positions to each other
+                if (db.playground[user.partnerId]) {
+                    socket.emit('playground:position', {
+                        userId: user.partnerId,
+                        x: db.playground[user.partnerId].x,
+                        y: db.playground[user.partnerId].y
                     });
-                    waitingSocket.emit('playground:partnerJoined', {
+                }
+                if (db.playground[userId]) {
+                    waitingSocket.emit('playground:position', {
                         userId: userId,
-                        username: user.username,
-                        gender: user.gender
+                        x: db.playground[userId].x,
+                        y: db.playground[userId].y
                     });
-                    
-                    // Send positions
-                    if (db.playground[waitingUserId]) {
-                        socket.emit('playground:position', {
-                            userId: waitingUserId,
-                            x: db.playground[waitingUserId].x,
-                            y: db.playground[waitingUserId].y
-                        });
-                    }
                 }
             }
         }

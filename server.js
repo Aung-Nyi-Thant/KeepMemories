@@ -8,7 +8,8 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
-
+const { Server } = require('socket.io');
+const http = require('http');
 
 const app = express();
 // Trust only the first proxy (Render's load balancer) - required for express-rate-limit v8+
@@ -16,14 +17,27 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 
+// Create HTTP server and Socket.IO instance
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
+// Store active playground connections
+const playgroundConnections = new Map(); // userId -> { socketId, userId, username, partnerId }
+
 app.use(cors());
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             "default-src": ["'self'"],
-            "script-src": ["'self'", "https://cdn.jsdelivr.net"],
+            "script-src": ["'self'", "https://cdn.jsdelivr.net", "https://cdn.socket.io"],
             "img-src": ["'self'", "data:", "blob:", "https://*"],
             "style-src": ["'self'", "'unsafe-inline'"],
+            "connect-src": ["'self'", "ws:", "wss:", "http:", "https:"],
         },
     },
 }));
@@ -529,7 +543,212 @@ app.post('/api/playground/invite', authenticate, (req, res) => {
     } else {
         db.playground[userId].invitingPartner = true;
     }
+    
+    // Notify partner via WebSocket if they're connected
+    const user = db.users[userId];
+    if (user && user.partnerId) {
+        const partnerConnection = playgroundConnections.get(user.partnerId);
+        if (partnerConnection) {
+            io.to(partnerConnection.socketId).emit('playground:invite', {
+                fromId: userId,
+                fromName: user.username
+            });
+        }
+    }
+    
     res.json({ success: true });
+});
+
+// --- SOCKET.IO PLAYGROUND MULTIPLAYER ---
+io.use((socket, next) => {
+    // Authenticate Socket.IO connections using token from handshake
+    const token = socket.handshake.auth.token;
+    if (!token) {
+        return next(new Error('Authentication error: No token provided'));
+    }
+    
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return next(new Error('Authentication error: Invalid token'));
+        }
+        socket.userId = decoded.userId;
+        next();
+    });
+});
+
+io.on('connection', (socket) => {
+    const userId = socket.userId;
+    const user = db.users[userId];
+    
+    if (!user) {
+        socket.disconnect();
+        return;
+    }
+    
+    console.log(`[Playground] User ${user.username} (${userId}) connected to playground`);
+    
+    // Store connection
+    playgroundConnections.set(userId, {
+        socketId: socket.id,
+        userId: userId,
+        username: user.username,
+        partnerId: user.partnerId,
+        room: `playground_${userId}_${user.partnerId || 'solo'}`
+    });
+    
+    // Join a room with partner if they exist
+    if (user.partnerId) {
+        const partnerConnection = playgroundConnections.get(user.partnerId);
+        if (partnerConnection) {
+            // Both players join the same room
+            const roomName = `playground_${userId < user.partnerId ? userId : user.partnerId}_${userId < user.partnerId ? user.partnerId : userId}`;
+            socket.join(roomName);
+            io.to(partnerConnection.socketId).join(roomName);
+            
+            // Update partner connection info
+            partnerConnection.room = roomName;
+            playgroundConnections.set(user.partnerId, partnerConnection);
+            
+            // Notify partner that user joined
+            io.to(partnerConnection.socketId).emit('playground:partnerJoined', {
+                userId: userId,
+                username: user.username,
+                gender: user.gender
+            });
+            
+            // Send partner info to newly joined user
+            socket.emit('playground:partnerJoined', {
+                userId: user.partnerId,
+                username: partnerConnection.username,
+                gender: db.users[user.partnerId]?.gender
+            });
+            
+            // Send current positions to each other
+            if (db.playground[user.partnerId]) {
+                socket.emit('playground:position', {
+                    userId: user.partnerId,
+                    x: db.playground[user.partnerId].x,
+                    y: db.playground[user.partnerId].y
+                });
+            }
+            if (db.playground[userId]) {
+                io.to(partnerConnection.socketId).emit('playground:position', {
+                    userId: userId,
+                    x: db.playground[userId].x,
+                    y: db.playground[userId].y
+                });
+            }
+        } else {
+            // Partner not in playground yet - check if they join later
+            socket.join(`playground_waiting_${userId}`);
+            
+            // When partner joins later, handle it in their connection handler
+            // This is handled by checking for existing waiting connections
+        }
+    } else {
+        socket.join(`playground_solo_${userId}`);
+    }
+    
+    // Check if partner was waiting for this user
+    if (user.partnerId) {
+        // Look for waiting partner connections
+        for (const [waitingUserId, conn] of playgroundConnections.entries()) {
+            if (conn.partnerId === userId && waitingUserId !== userId) {
+                // Partner was waiting, now both are connected
+                const waitingSocket = io.sockets.sockets.get(conn.socketId);
+                if (waitingSocket) {
+                    const roomName = `playground_${userId < waitingUserId ? userId : waitingUserId}_${userId < waitingUserId ? waitingUserId : userId}`;
+                    socket.join(roomName);
+                    waitingSocket.join(roomName);
+                    waitingSocket.leave(`playground_waiting_${waitingUserId}`);
+                    
+                    // Notify both users
+                    socket.emit('playground:partnerJoined', {
+                        userId: waitingUserId,
+                        username: conn.username,
+                        gender: db.users[waitingUserId]?.gender
+                    });
+                    waitingSocket.emit('playground:partnerJoined', {
+                        userId: userId,
+                        username: user.username,
+                        gender: user.gender
+                    });
+                    
+                    // Send positions
+                    if (db.playground[waitingUserId]) {
+                        socket.emit('playground:position', {
+                            userId: waitingUserId,
+                            x: db.playground[waitingUserId].x,
+                            y: db.playground[waitingUserId].y
+                        });
+                    }
+                }
+            }
+        }
+    }
+    
+    // Handle position updates
+    socket.on('playground:move', (data) => {
+        const { x, y } = data;
+        
+        // Update local storage
+        if (!db.playground[userId]) {
+            db.playground[userId] = { x: 400, y: 550, sprite: 'idle', lastUpdate: Date.now() };
+        }
+        db.playground[userId].x = x;
+        db.playground[userId].y = y;
+        db.playground[userId].lastUpdate = Date.now();
+        
+        // Broadcast to partner
+        if (user.partnerId) {
+            const partnerConnection = playgroundConnections.get(user.partnerId);
+            if (partnerConnection) {
+                io.to(partnerConnection.socketId).emit('playground:position', {
+                    userId: userId,
+                    x: x,
+                    y: y
+                });
+            }
+        }
+    });
+    
+    // Handle playground invite via WebSocket
+    socket.on('playground:invite', () => {
+        if (user.partnerId) {
+            const partnerConnection = playgroundConnections.get(user.partnerId);
+            if (partnerConnection) {
+                io.to(partnerConnection.socketId).emit('playground:invite', {
+                    fromId: userId,
+                    fromName: user.username
+                });
+            } else {
+                // Partner not in playground, store invite flag
+                if (!db.playground[userId]) {
+                    db.playground[userId] = { x: 400, y: 300, sprite: 'idle', lastUpdate: Date.now(), invitingPartner: true };
+                } else {
+                    db.playground[userId].invitingPartner = true;
+                }
+            }
+        }
+    });
+    
+    // Handle disconnect
+    socket.on('disconnect', () => {
+        console.log(`[Playground] User ${user.username} (${userId}) disconnected from playground`);
+        
+        // Notify partner
+        if (user.partnerId) {
+            const partnerConnection = playgroundConnections.get(user.partnerId);
+            if (partnerConnection) {
+                io.to(partnerConnection.socketId).emit('playground:partnerLeft', {
+                    userId: userId
+                });
+            }
+        }
+        
+        // Clean up
+        playgroundConnections.delete(userId);
+    });
 });
 
 // Start Server
@@ -538,6 +757,7 @@ app.get('/api/ping', (req, res) => {
     res.json({ success: true, timestamp: Date.now() });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Socket.IO server ready for playground multiplayer`);
 });

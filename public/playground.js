@@ -26,6 +26,9 @@ let joystick = { active: false, x: 0, y: 0 };
 let currentUserId = localStorage.getItem('currentUserId');
 let token = localStorage.getItem('authToken');
 let API_URL = '/api';
+let socket = null;
+let lastPositionSent = { x: 0, y: 0 };
+let positionUpdateThrottle = 0;
 
 function preload() {
     // Background
@@ -102,11 +105,18 @@ function create() {
 
     // 4. Partner initialization
     const partnerPrefix = (gender === 'Female' ? 'boy' : 'girl');
-    partner = this.physics.add.sprite(-100, -100, partnerPrefix + '_idle');
+    partner = this.physics.add.sprite(400, 600, partnerPrefix + '_idle');
+    partner.setCollideWorldBounds(true);
+    partner.setCircle(15, 10, 40); // Same hitbox as player
     partner.setDisplaySize(50, 50);
     partner.setVisible(false);
+    partner.active = false;
     partner.spritePrefix = partnerPrefix;
-    partner.nameText = this.add.text(-100, -150, 'Partner', {
+    partner.walkFrame = 0;
+    partner.lastFrameTime = 0;
+    partner.targetX = 400;
+    partner.targetY = 600;
+    partner.nameText = this.add.text(400, 550, 'Partner', {
         fontSize: '16px',
         color: '#ffffff',
         fontStyle: 'bold',
@@ -116,13 +126,14 @@ function create() {
 
     // 5. Collisions
     this.physics.add.collider(player, obstacles);
+    this.physics.add.collider(partner, obstacles);
 
-    // 6. Joystick & Sync Intervals
+    // 6. Joystick & Socket.IO initialization
     setupJoystick();
+    initSocketIO(this);
 
-    // Use Phaser's Timer for sync events
-    this.time.addEvent({ delay: 200, callback: syncPosition, callbackScope: this, loop: true });
-    this.time.addEvent({ delay: 3000, callback: fetchData, callbackScope: this, loop: true });
+    // Fetch partner data on load
+    fetchData();
 }
 
 function update() {
@@ -179,6 +190,26 @@ function update() {
 
     // Update name label position
     player.nameText.setPosition(player.x, player.y - 35 + player.yOffset);
+
+    // Send position updates via Socket.IO (throttled)
+    if (socket && socket.connected) {
+        positionUpdateThrottle++;
+        if (positionUpdateThrottle >= 3) { // Send every 3 frames (~50ms at 60fps)
+            const dx = Math.abs(player.x - lastPositionSent.x);
+            const dy = Math.abs(player.y - lastPositionSent.y);
+            
+            // Only send if position changed significantly (more than 2 pixels)
+            if (dx > 2 || dy > 2) {
+                socket.emit('playground:move', {
+                    x: player.x,
+                    y: player.y
+                });
+                lastPositionSent.x = player.x;
+                lastPositionSent.y = player.y;
+                positionUpdateThrottle = 0;
+            }
+        }
+    }
 
     // Partner Interpolation
     if (partner.active && partner.targetX) {
@@ -293,33 +324,87 @@ async function fetchData() {
     } catch (e) { }
 }
 
-async function syncPosition() {
-    if (!token || !player) return;
-    try {
-        // Send own position
-        fetch(`${API_URL}/playground/update-pos`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ x: player.x, y: player.y })
-        });
+function initSocketIO(scene) {
+    if (!token) {
+        console.warn('No auth token found, Socket.IO connection skipped');
+        return;
+    }
 
-        // Get partner position
-        if (partnerId) {
-            const res = await fetch(`${API_URL}/playground/status/${partnerId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (data.success && data.x !== undefined) {
-                partner.targetX = data.x;
-                partner.targetY = data.y;
-                partner.active = true;
-                updatePartnerStatus(true);
-            } else {
-                partner.active = false;
-                updatePartnerStatus(false);
-            }
+    // Initialize Socket.IO connection with authentication
+    socket = io({
+        auth: {
+            token: token
         }
-    } catch (e) { }
+    });
+
+    socket.on('connect', () => {
+        console.log('[Playground] Connected to multiplayer server');
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('[Playground] Connection error:', error.message);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('[Playground] Disconnected from server');
+        updatePartnerStatus(false);
+    });
+
+    // Handle partner joining the playground
+    socket.on('playground:partnerJoined', (data) => {
+        console.log('[Playground] Partner joined:', data);
+        partnerId = data.userId;
+        partner.nameText.setText(data.username || 'Partner');
+        
+        if (data.gender) {
+            partner.spritePrefix = (data.gender === 'Female' ? 'girl' : 'boy');
+            partner.setTexture(partner.spritePrefix + '_idle');
+        }
+        
+        // Initialize partner position if not set
+        if (!partner.active) {
+            partner.x = player.x + 50; // Start slightly offset from player
+            partner.y = player.y;
+            partner.targetX = partner.x;
+            partner.targetY = partner.y;
+        }
+        
+        partner.active = true;
+        updatePartnerStatus(true);
+    });
+
+    // Handle partner leaving the playground
+    socket.on('playground:partnerLeft', (data) => {
+        console.log('[Playground] Partner left:', data);
+        partner.active = false;
+        partner.setVisible(false);
+        partner.nameText.setVisible(false);
+        updatePartnerStatus(false);
+    });
+
+    // Handle real-time position updates from partner
+    socket.on('playground:position', (data) => {
+        if (data.userId === partnerId) {
+            partner.targetX = data.x;
+            partner.targetY = data.y;
+            if (!partner.active) {
+                // Initialize partner position on first update
+                partner.x = data.x;
+                partner.y = data.y;
+            }
+            partner.active = true;
+            updatePartnerStatus(true);
+        }
+    });
+
+    // Handle playground invitation
+    socket.on('playground:invite', (data) => {
+        console.log('[Playground] Invitation received:', data);
+        if (confirm(`${data.fromName} is inviting you to join the playground! Join now?`)) {
+            // User can navigate to playground or auto-join if already there
+            updatePartnerStatus(true);
+        }
+    });
 }
 
 function updatePartnerStatus(online) {
@@ -346,14 +431,32 @@ if (homeBtn) {
 const inviteBtn = document.getElementById('inviteBtn');
 if (inviteBtn) {
     inviteBtn.addEventListener('click', async () => {
+        if (!partnerId) {
+            alert("You need to have a partner connected first! 💕");
+            return;
+        }
+
         try {
-            await fetch(`${API_URL}/playground/invite`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            alert("Invitation sent! 💌");
+            // Send invitation via Socket.IO if connected, otherwise fallback to HTTP
+            if (socket && socket.connected) {
+                socket.emit('playground:invite');
+                alert("Invitation sent! 💌 Your partner will be notified.");
+            } else {
+                await fetch(`${API_URL}/playground/invite`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                alert("Invitation sent! 💌");
+            }
         } catch (e) {
             alert("Error sending invitation.");
         }
     });
 }
+
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
+    if (socket) {
+        socket.disconnect();
+    }
+});

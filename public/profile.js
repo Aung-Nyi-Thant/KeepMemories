@@ -119,13 +119,14 @@ async function loadProfile() {
             document.getElementById('profileUsername').textContent = username;
             document.getElementById('userId').textContent = result.myId;
 
-            // Set Avatar Image based on gender
+            // Set Avatar Image based on gender/partnership
             const avatarCircle = document.getElementById('avatarInitial');
-            const gender = result.gender;
-            if (gender === 'Male') {
-                avatarCircle.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-            } else if (gender === 'Female') {
-                avatarCircle.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            if (result.partnerName) {
+                avatarCircle.innerHTML = `<img src="assets/avatars/couple.png" style="width: 100%; height: 100%; object-fit: contain;">`;
+            } else if (result.gender === 'Male') {
+                avatarCircle.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: contain;">`;
+            } else if (result.gender === 'Female') {
+                avatarCircle.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: contain;">`;
             } else {
                 avatarCircle.textContent = username.charAt(0).toUpperCase();
             }

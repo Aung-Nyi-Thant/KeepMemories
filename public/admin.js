@@ -114,10 +114,12 @@ function renderTable(users) {
 
 function showUserDetails(user) {
     const avatarCircle = document.getElementById('modalAvatar');
-    if (user.gender === 'Male') {
-        avatarCircle.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    if (user.partnerId) {
+        avatarCircle.innerHTML = `<img src="assets/avatars/couple.png" style="width: 100%; height: 100%; object-fit: contain;">`;
+    } else if (user.gender === 'Male') {
+        avatarCircle.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: contain;">`;
     } else if (user.gender === 'Female') {
-        avatarCircle.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        avatarCircle.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: contain;">`;
     } else {
         avatarCircle.textContent = '👤';
     }

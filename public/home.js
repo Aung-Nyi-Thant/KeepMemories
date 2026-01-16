@@ -185,13 +185,7 @@ async function loadDashboardData() {
 
                 // Update Popup Data
                 const partnerAvatar = document.querySelector('#heartPopup .avatar-circle');
-                if (result.partnerGender === 'Male') {
-                    partnerAvatar.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-                } else if (result.partnerGender === 'Female') {
-                    partnerAvatar.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-                } else {
-                    partnerAvatar.textContent = result.partnerName.charAt(0).toUpperCase() || '?';
-                }
+                partnerAvatar.innerHTML = `<img src="assets/avatars/couple.png" style="width: 100%; height: 100%; object-fit: contain;">`;
 
                 document.getElementById('popupInfo').textContent = `Connected with ${result.partnerName}`;
                 document.getElementById('popupStatus').textContent = "Forever & Always 💕";
@@ -201,9 +195,9 @@ async function loadDashboardData() {
                 // Single State Popup
                 const myAvatar = document.querySelector('#heartPopup .avatar-circle');
                 if (result.gender === 'Male') {
-                    myAvatar.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    myAvatar.innerHTML = `<img src="assets/avatars/boy.png" style="width: 100%; height: 100%; object-fit: contain;">`;
                 } else if (result.gender === 'Female') {
-                    myAvatar.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    myAvatar.innerHTML = `<img src="assets/avatars/girl.png" style="width: 100%; height: 100%; object-fit: contain;">`;
                 } else {
                     myAvatar.textContent = (result.username && result.username.charAt(0).toUpperCase()) || 'F';
                 }

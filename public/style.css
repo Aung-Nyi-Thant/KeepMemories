@@ -836,18 +836,18 @@ body:not(.dashboard-body) {
 }
 
 .heart-popup .avatar-circle {
-    width: 80px;
-    height: 80px;
-    background: var(--bg-gradient);
-    border-radius: 50%;
+    width: 200px;
+    height: 200px;
+    background: transparent;
+    border-radius: 15px;
     margin: 0 auto 15px;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 2rem;
-    border: 3px solid white;
-    box-shadow: 0 5px 15px var(--shadow-color);
-    overflow: hidden;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 

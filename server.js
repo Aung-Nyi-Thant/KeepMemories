@@ -17,7 +17,16 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 
 app.use(cors());
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            "default-src": ["'self'"],
+            "script-src": ["'self'", "https://cdn.jsdelivr.net"],
+            "img-src": ["'self'", "data:", "https://*"],
+            "style-src": ["'self'", "'unsafe-inline'"],
+        },
+    },
+}));
 app.use(bodyParser.json({ limit: '50mb' })); // Increased limit for images
 app.use(express.static(path.join(__dirname, 'public')));
 

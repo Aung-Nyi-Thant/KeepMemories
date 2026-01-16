@@ -28,6 +28,7 @@ let token = localStorage.getItem('authToken');
 let API_URL = '/api';
 
 function preload() {
+    // Relative paths to public/assets
     this.load.image('bg', 'assets/playground_bg.png');
     this.load.image('boy', 'assets/boy_pixel.png');
     this.load.image('girl', 'assets/girl_pixel.png');
@@ -37,11 +38,10 @@ function create() {
     // 1. Background
     this.add.image(400, 400, 'bg').setDisplaySize(800, 800);
 
-    // 2. Physics Obstacles (Manual Mapping)
+    // 2. Physics Obstacles (Manual Mapping for collisions)
     const obstacles = this.physics.add.staticGroup();
 
-    // Mapping coordinates based on the pixel_bg image (800x800)
-    // Trees
+    // Mapping based on playground_bg.png layout
     obstacles.add(this.add.zone(90, 80, 110, 110));   // Top Left Tree
     obstacles.add(this.add.zone(350, 70, 110, 110));  // Top Middle Tree
     obstacles.add(this.add.zone(700, 80, 110, 110));  // Top Right Tree
@@ -50,21 +50,21 @@ function create() {
     obstacles.add(this.add.zone(750, 300, 100, 100)); // Middle Right
     obstacles.add(this.add.zone(780, 700, 150, 150)); // Bottom Right Tree
 
-    // Structures
-    obstacles.add(this.add.zone(800, 100, 130, 150)); // Gazebo Area
-    obstacles.add(this.add.zone(700, 650, 220, 180)); // Pool/Pond Area
-    obstacles.add(this.add.zone(250, 520, 350, 40));  // Bridge / Path Wall
+    // Structures & Water
+    obstacles.add(this.add.zone(780, 100, 140, 160)); // Gazebo
+    obstacles.add(this.add.zone(700, 650, 220, 180)); // Pool
+    obstacles.add(this.add.zone(250, 520, 350, 50));  // Bridge / Path Wall
 
     // Flower beds
     obstacles.add(this.add.zone(220, 190, 100, 70));  // Top Left Flowers
-    obstacles.add(this.add.zone(620, 370, 250, 100)); // Sunflower Garden Area
+    obstacles.add(this.add.zone(620, 370, 250, 100)); // Sunflower Area
     obstacles.add(this.add.zone(300, 710, 250, 80));  // Bottom Left Flowers
 
-    // 3. Player
+    // 3. Player initialization
     const gender = localStorage.getItem('userGender') || 'Male';
     player = this.physics.add.sprite(400, 550, (gender === 'Female' ? 'girl' : 'boy'));
     player.setCollideWorldBounds(true);
-    player.setCircle(20, 10, 20); // Accurate collision circle
+    player.setCircle(15, 20, 35); // Adjust for pixel sprite feet
     player.setDisplaySize(70, 70);
     player.username = localStorage.getItem('currentUsername') || 'You';
 
@@ -75,54 +75,70 @@ function create() {
         fontStyle: 'bold',
         color: '#ffffff',
         stroke: '#000000',
-        strokeThickness: 4
+        strokeThickness: 5
     }).setOrigin(0.5);
 
-    // 4. Partner
+    // 4. Partner initialization
     partner = this.physics.add.sprite(-100, -100, 'girl');
-    partner.active = false;
     partner.setDisplaySize(70, 70);
+    partner.setVisible(false);
     partner.nameText = this.add.text(-100, -150, 'Partner', {
         fontSize: '16px',
         color: '#ffffff',
         fontStyle: 'bold',
         stroke: '#000000',
-        strokeThickness: 4
-    }).setOrigin(0.5);
+        strokeThickness: 5
+    }).setOrigin(0.5).setVisible(false);
 
     // 5. Collisions
     this.physics.add.collider(player, obstacles);
 
     // 6. Joystick & Sync Intervals
     setupJoystick();
-    setInterval(() => syncPosition(), 200);
-    setInterval(() => fetchData(), 3000);
+
+    // Use Phaser's Timer for sync events
+    this.time.addEvent({ delay: 200, callback: syncPosition, callbackScope: this, loop: true });
+    this.time.addEvent({ delay: 3000, callback: fetchData, callbackScope: this, loop: true });
 }
 
 function update() {
-    // 1. Movement
-    if (joystick.active) {
-        const speed = 200;
+    const speed = 250;
+
+    // Movement Logic
+    if (joystick.active && (Math.abs(joystick.x) > 0.1 || Math.abs(joystick.y) > 0.1)) {
         player.setVelocityX(joystick.x * speed);
         player.setVelocityY(joystick.y * speed);
 
-        // Bobbing Animation
+        // Bobbing effect while walking
         player.yOffset = Math.sin(this.time.now / 100) * 5;
     } else {
         player.setVelocity(0);
-        player.yOffset = Math.sin(this.time.now / 400) * 2;
+        player.yOffset = Math.sin(this.time.now / 400) * 2; // Breathing idle
     }
 
-    // Apply animation / shadow logic
-    player.nameText.setPosition(player.x, player.y - 50 + player.yOffset);
+    // Update name label position
+    player.nameText.setPosition(player.x, player.y - 45 + player.yOffset);
 
-    // 2. Partner Lerp
+    // Partner Interpolation
     if (partner.active && partner.targetX) {
-        partner.x += (partner.targetX - partner.x) * 0.15;
-        partner.y += (partner.targetY - partner.y) * 0.15;
-        partner.nameText.setPosition(partner.x, partner.y - 50);
         partner.setVisible(true);
         partner.nameText.setVisible(true);
+
+        // Lerp for smooth movement
+        partner.x += (partner.targetX - partner.x) * 0.15;
+        partner.y += (partner.targetY - partner.y) * 0.15;
+
+        // Partner bobbing based on movement speed
+        const dist = Phaser.Math.Distance.Between(partner.x, partner.y, partner.targetX, partner.targetY);
+        let bob = 0;
+        if (dist > 2) {
+            bob = Math.sin(this.time.now / 100) * 5;
+        } else {
+            bob = Math.sin(this.time.now / 400) * 2;
+        }
+
+        partner.y += bob; // Visual only
+        partner.nameText.setPosition(partner.x, partner.y - 45);
     } else {
         partner.setVisible(false);
         partner.nameText.setVisible(false);
@@ -177,7 +193,7 @@ async function fetchData() {
         const res = await fetch(`${API_URL}/data/${currentUserId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const result = await response.json();
+        const result = await res.json();
         if (result.success) {
             partnerId = result.partnerId;
             partner.nameText.setText(result.partnerName || 'Partner');
@@ -189,14 +205,16 @@ async function fetchData() {
 }
 
 async function syncPosition() {
-    if (!token) return;
+    if (!token || !player) return;
     try {
+        // Send own position
         fetch(`${API_URL}/playground/update-pos`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ x: player.x, y: player.y })
         });
 
+        // Get partner position
         if (partnerId) {
             const res = await fetch(`${API_URL}/playground/status/${partnerId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -237,7 +255,7 @@ if (inviteBtn) {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            alert("Invitation sent! Partner will see a message on their dashboard. 💌");
+            alert("Invitation sent! 💌");
         } catch (e) {
             alert("Error sending invitation.");
         }

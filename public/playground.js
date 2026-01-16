@@ -57,46 +57,25 @@ function create() {
     // 2. Physics Obstacles (Manual Mapping for collisions)
     const obstacles = this.physics.add.staticGroup();
 
-    // Mapping based on playground_bg.png layout
-    // === TOP ROW ===
-    obstacles.add(this.add.zone(90, 100, 130, 160));    // Top-Left Pink Tree
-    obstacles.add(this.add.zone(350, 80, 170, 150));    // Top-Center Tree
-    obstacles.add(this.add.zone(570, 80, 120, 100));    // Top Pink Cherry Tree
-    obstacles.add(this.add.zone(700, 130, 180, 200));   // Gazebo (Top Right)
+    // Mapping based on NEW natural park layout
+    // === BORDERS ===
+    obstacles.add(this.add.zone(400, 20, 800, 50));     // Top border trees
+    obstacles.add(this.add.zone(400, 785, 800, 40));    // Bottom border edge
+    obstacles.add(this.add.zone(15, 400, 30, 800));     // Left edge
+    obstacles.add(this.add.zone(785, 400, 40, 800));    // Right edge
 
-    // === FLOWER BEDS (Left Side) ===
-    obstacles.add(this.add.zone(115, 290, 150, 120));   // Upper-Left Flower Bed
-    obstacles.add(this.add.zone(90, 470, 115, 200));    // Left-Middle Flower Bed (long vertical)
-    obstacles.add(this.add.zone(115, 685, 180, 100));   // Bottom-Left Flower Bed
+    // === POND & DOCK ===
+    obstacles.add(this.add.zone(695, 515, 230, 200));   // Main Pond Area
+    obstacles.add(this.add.zone(540, 520, 80, 70));     // Bridge/Dock on pond
 
-    // === CENTER FLOWER BEDS ===
-    obstacles.add(this.add.zone(300, 335, 180, 80));    // Top-Center Flower Bed
-    obstacles.add(this.add.zone(300, 465, 180, 80));    // Bottom-Center Flower Bed
-    obstacles.add(this.add.zone(405, 400, 100, 150));   // Center Flower/Sunflower Area (vertical strip)
-
-    // === RIGHT SIDE ===
-    obstacles.add(this.add.zone(570, 290, 70, 70));     // Bench Area (Top Right of center)
-    obstacles.add(this.add.zone(640, 500, 200, 170));   // Pond
-    obstacles.add(this.add.zone(760, 350, 100, 100));   // Right Edge Tree
-    obstacles.add(this.add.zone(770, 700, 100, 180));   // Bottom-Right Willow Tree
-
-    // === BOTTOM ROW ===
-    obstacles.add(this.add.zone(315, 720, 250, 100));   // Bottom-Center Flower Bed
-    obstacles.add(this.add.zone(75, 715, 60, 100));     // Bottom-Left Tree Trunk
-
-    // === USER-SPECIFIED ZONES (scaled from original coords) ===
-    // Original coords were larger, scaled down by ~0.7x for 800x800 canvas
-    obstacles.add(this.add.zone(427, 116, 80, 80));   // Zone 1
-    obstacles.add(this.add.zone(595, 102, 80, 80));   // Zone 2
-    obstacles.add(this.add.zone(795, 144, 80, 80));   // Zone 3
-    obstacles.add(this.add.zone(403, 207, 80, 80));   // Zone 4
-    obstacles.add(this.add.zone(392, 294, 80, 80));   // Zone 5
-    obstacles.add(this.add.zone(532, 329, 80, 80));   // Zone 6
-    obstacles.add(this.add.zone(630, 252, 80, 80));   // Zone 7
-    obstacles.add(this.add.zone(508, 434, 80, 80));   // Zone 8
-    obstacles.add(this.add.zone(711, 410, 80, 80));   // Zone 9
-    obstacles.add(this.add.zone(788, 427, 80, 80));   // Zone 10
-
+    // === SCATTERED TREES ===
+    obstacles.add(this.add.zone(640, 80, 80, 80));      // Top-Right Inner Tree
+    obstacles.add(this.add.zone(495, 345, 100, 100));   // Center Inner Tree
+    obstacles.add(this.add.zone(45, 310, 90, 180));     // Left-Middle Bulk Trees
+    obstacles.add(this.add.zone(800, 380, 120, 150));   // Right-Middle Edge Trees
+    obstacles.add(this.add.zone(70, 750, 120, 120));    // Bottom-Left Trees
+    obstacles.add(this.add.zone(750, 750, 120, 120));   // Bottom-Right Trees
+    obstacles.add(this.add.zone(595, 940, 100, 100));   // Bottom Edge Tree
 
     // 3. Player initialization
     const gender = localStorage.getItem('userGender') || 'Male';

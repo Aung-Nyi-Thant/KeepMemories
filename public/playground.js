@@ -42,23 +42,32 @@ function create() {
     const obstacles = this.physics.add.staticGroup();
 
     // Mapping based on playground_bg.png layout
-    obstacles.add(this.add.zone(90, 80, 110, 110));   // Top Left Tree
-    obstacles.add(this.add.zone(350, 70, 110, 110));  // Top Middle Tree
-    obstacles.add(this.add.zone(700, 80, 110, 110));  // Top Right Tree
-    obstacles.add(this.add.zone(60, 270, 90, 100));   // Middle Left Tree
-    obstacles.add(this.add.zone(360, 360, 120, 120)); // Center Tree
-    obstacles.add(this.add.zone(750, 300, 100, 100)); // Middle Right
-    obstacles.add(this.add.zone(780, 700, 150, 150)); // Bottom Right Tree
+    // === TOP ROW ===
+    obstacles.add(this.add.zone(90, 100, 130, 160));    // Top-Left Pink Tree
+    obstacles.add(this.add.zone(350, 80, 170, 150));    // Top-Center Tree
+    obstacles.add(this.add.zone(570, 80, 120, 100));    // Top Pink Cherry Tree
+    obstacles.add(this.add.zone(700, 130, 180, 200));   // Gazebo (Top Right)
 
-    // Structures & Water
-    obstacles.add(this.add.zone(780, 100, 140, 160)); // Gazebo
-    obstacles.add(this.add.zone(700, 650, 220, 180)); // Pool
-    obstacles.add(this.add.zone(250, 520, 350, 50));  // Bridge / Path Wall
+    // === FLOWER BEDS (Left Side) ===
+    obstacles.add(this.add.zone(115, 290, 150, 120));   // Upper-Left Flower Bed
+    obstacles.add(this.add.zone(90, 470, 115, 200));    // Left-Middle Flower Bed (long vertical)
+    obstacles.add(this.add.zone(115, 685, 180, 100));   // Bottom-Left Flower Bed
 
-    // Flower beds
-    obstacles.add(this.add.zone(220, 190, 100, 70));  // Top Left Flowers
-    obstacles.add(this.add.zone(620, 370, 250, 100)); // Sunflower Area
-    obstacles.add(this.add.zone(300, 710, 250, 80));  // Bottom Left Flowers
+    // === CENTER FLOWER BEDS ===
+    obstacles.add(this.add.zone(300, 335, 180, 80));    // Top-Center Flower Bed
+    obstacles.add(this.add.zone(300, 465, 180, 80));    // Bottom-Center Flower Bed
+    obstacles.add(this.add.zone(405, 400, 100, 150));   // Center Flower/Sunflower Area (vertical strip)
+
+    // === RIGHT SIDE ===
+    obstacles.add(this.add.zone(570, 290, 70, 70));     // Bench Area (Top Right of center)
+    obstacles.add(this.add.zone(640, 500, 200, 170));   // Pond
+    obstacles.add(this.add.zone(760, 350, 100, 100));   // Right Edge Tree
+    obstacles.add(this.add.zone(770, 700, 100, 180));   // Bottom-Right Willow Tree
+
+    // === BOTTOM ROW ===
+    obstacles.add(this.add.zone(315, 720, 250, 100));   // Bottom-Center Flower Bed
+    obstacles.add(this.add.zone(75, 715, 60, 100));     // Bottom-Left Tree Trunk
+
 
     // 3. Player initialization
     const gender = localStorage.getItem('userGender') || 'Male';

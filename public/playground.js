@@ -147,7 +147,7 @@ function create() {
 }
 
 function update() {
-    const speed = 250;
+    const speed = 180;
     const frameInterval = 150; // Milliseconds between frame switches
 
     // Movement Logic

@@ -27,7 +27,8 @@ const DB_FILE = path.join(__dirname, 'database.json');
 // Initial Load or Create DB
 let db = {
     users: {},     // map userId -> { username, passwordHash, spaceId, partnerId }
-    spaces: {}     // map spaceId -> { notes: [], images: [], dates: [] }
+    spaces: {},    // map spaceId -> { notes: [], images: [], dates: [] }
+    playground: {} // map userId -> { x, y, sprite, lastUpdate, invitingPartner: bool }
 };
 
 if (fs.existsSync(DB_FILE)) {
@@ -468,6 +469,54 @@ app.post('/api/admin/update-user-gender', authenticate, (req, res) => {
     targetUser.gender = (gender === "null" || gender === null) ? null : gender;
     saveDB();
     res.json({ success: true, message: "User gender updated by admin" });
+});
+
+// 10. PLAYGROUND SYNC
+app.post('/api/playground/update-pos', authenticate, (req, res) => {
+    const { x, y, sprite } = req.body;
+    const userId = req.user.userId;
+
+    db.playground[userId] = {
+        x, y, sprite,
+        lastUpdate: Date.now(),
+        invitingPartner: db.playground[userId]?.invitingPartner || false
+    };
+
+    // Auto-save periodically or just here
+    // saveDB(); // Maybe too frequent for movement? Let's keep in-memory for playground mostly.
+
+    res.json({ success: true });
+});
+
+app.get('/api/playground/status/:userId', authenticate, (req, res) => {
+    const targetId = req.params.userId;
+    const user = db.playground[targetId];
+
+    if (!user) return res.json({ success: false });
+
+    // Clean up old sessions (e.g. 30s inactivity)
+    if (Date.now() - user.lastUpdate > 30000) {
+        delete db.playground[targetId];
+        return res.json({ success: false });
+    }
+
+    res.json({
+        success: true,
+        x: user.x,
+        y: user.y,
+        sprite: user.sprite,
+        invitingPartner: user.invitingPartner
+    });
+});
+
+app.post('/api/playground/invite', authenticate, (req, res) => {
+    const userId = req.user.userId;
+    if (!db.playground[userId]) {
+        db.playground[userId] = { x: 400, y: 300, sprite: 'idle', lastUpdate: Date.now(), invitingPartner: true };
+    } else {
+        db.playground[userId].invitingPartner = true;
+    }
+    res.json({ success: true });
 });
 
 // Start Server

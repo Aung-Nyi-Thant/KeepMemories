@@ -118,6 +118,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const playgroundLinkCard = document.getElementById('playgroundLinkCard');
+    if (playgroundLinkCard) {
+        playgroundLinkCard.addEventListener('click', () => {
+            window.location.href = 'playground.html';
+        });
+    }
+
     const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
     if (uploadPhotoBtn) {
         uploadPhotoBtn.addEventListener('click', () => {
@@ -182,6 +189,9 @@ async function loadDashboardData() {
             if (result.partnerName) {
                 document.getElementById('partnerSection').style.display = 'inline';
                 document.getElementById('displayPartner').textContent = result.partnerName;
+
+                // Check for Playground Invitation (New)
+                checkPlaygroundInvite(result.partnerId);
 
                 // Update Popup Data
                 const partnerAvatar = document.querySelector('#heartPopup .avatar-circle');

@@ -1,4 +1,4 @@
-const API_URL = 'https://keepmemories-1.onrender.com/api';
+const API_URL = '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Theme

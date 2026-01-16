@@ -1,4 +1,4 @@
-const API_URL = 'https://keepmemories-1.onrender.com/api';
+const API_URL = '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Check if already logged in
@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Success!
                 localStorage.setItem('currentUserId', result.userId);
                 localStorage.setItem('currentUsername', result.username);
+                localStorage.setItem('userGender', result.gender); // Store Gender for playground
                 localStorage.setItem('authToken', result.token); // Store Token
 
                 // Admin security: We NO LONGER store isAdmin in localStorage

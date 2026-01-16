@@ -152,23 +152,24 @@
 
 <body>
     <div id="game-container" class="fade-in">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <!-- Phaser will inject the canvas here -->
+    </div>
 
-        <div id="ui-overlay">
-            <div id="game-controls">
-                <button class="game-btn" onclick="location.href='home.html'">🏠 Home</button>
-                <button id="inviteBtn" class="game-btn">📩 Invite Partner</button>
-            </div>
-
-            <div id="partner-status">
-                <span id="statusDot" class="status-dot offline"></span>
-                <span id="statusText">Partner Offline</span>
-            </div>
-
-            <div class="joystick-container" id="joystick">
-                <div class="joystick-knob" id="knob"></div>
-            </div>
+    <div id="ui-overlay">
+        <div id="game-controls">
+            <button class="game-btn" onclick="location.href='home.html'">🏠 Home</button>
+            <button id="inviteBtn" class="game-btn">📩 Invite Partner</button>
         </div>
+
+        <div id="partner-status">
+            <span id="statusDot" class="status-dot offline"></span>
+            <span id="statusText">Partner Offline</span>
+        </div>
+
+        <div class="joystick-container" id="joystick">
+            <div class="joystick-knob" id="knob"></div>
+        </div>
+    </div>
     </div>
 
     <script src="playground.js"></script>

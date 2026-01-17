@@ -6,26 +6,61 @@
       "spaceId": "SPACE_LMQ8KI",
       "partnerId": null,
       "pendingInvite": null,
-      "passwordHash": "$2b$10$F0EbF0xlA/omx/r3uVih8Ofw/zMJ4kjCzvrEdEujD53aaYb7DSlAu"
+      "passwordHash": "$2b$10$F0EbF0xlA/omx/r3uVih8Ofw/zMJ4kjCzvrEdEujD53aaYb7DSlAu",
+      "lastActive": 1768642694153,
+      "gender": "Male"
     },
     "D5QDJP": {
       "id": "D5QDJP",
       "username": "Someone",
       "spaceId": "SPACE_D5QDJP",
       "partnerId": null,
-      "passwordHash": "$2b$10$dHEhZd5yfUWTn.l0pTPRWu/RGaJF1xxac7ocxscXdVpIwg1ie9NJS"
+      "passwordHash": "$2b$10$dHEhZd5yfUWTn.l0pTPRWu/RGaJF1xxac7ocxscXdVpIwg1ie9NJS",
+      "lastActive": 1768643000522,
+      "gender": "Female"
     }
   },
   "spaces": {
     "SPACE_LMQ8KI": {
       "notes": [],
       "images": [],
-      "dates": []
+      "dates": [],
+      "pet": {
+        "name": "Lovebug",
+        "level": 3,
+        "exp": 0,
+        "mood": "Happy",
+        "lastFed": 0
+      },
+      "sunflower": {
+        "name": "Sunny",
+        "level": 1,
+        "exp": 0,
+        "stage": "Seed",
+        "lastWatered": 0,
+        "lastFertilized": 0
+      }
     },
     "SPACE_D5QDJP": {
       "notes": [],
       "images": [],
-      "dates": []
+      "dates": [],
+      "pet": {
+        "name": "Lovebug",
+        "level": 3,
+        "exp": 0,
+        "mood": "Happy",
+        "lastFed": 0
+      },
+      "sunflower": {
+        "name": "Sunny",
+        "level": 1,
+        "exp": 0,
+        "stage": "Seed",
+        "lastWatered": 0,
+        "lastFertilized": 0
+      }
     }
-  }
+  },
+  "playground": {}
 }

@@ -12,6 +12,17 @@ const { Server } = require('socket.io');
 const http = require('http');
 
 const app = express();
+
+// Helper to generate unique IDs
+function generateId(length = 6) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
 // Trust only the first proxy (Render's load balancer) - required for express-rate-limit v8+
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
@@ -26,8 +37,17 @@ const io = new Server(server, {
     }
 });
 
-// Store active playground connections
-const playgroundConnections = new Map(); // userId -> { socketId, userId, username, partnerId }
+// Store active playground connections - tracks ALL players for shared world
+const playgroundConnections = new Map(); // oderId -> { socketId, oderId, username, gender, color, x, y }
+
+// Store active private chat rooms (ephemeral - not persisted)
+const privateRooms = new Map(); // roomId -> { members: [oderId1, oderId2], messages: [], createdAt }
+
+// Store pending chat invites
+const pendingInvites = new Map(); // `${fromId}_${toId}` -> { fromId, toId, timestamp }
+
+// Proximity detection config
+const PROXIMITY_RADIUS = 100; // pixels - players within this distance can chat
 
 app.use(cors());
 app.use(helmet({
@@ -540,31 +560,31 @@ app.post('/api/playground/invite', authenticate, (req, res) => {
     const userId = req.user.userId;
     const { targetUserId } = req.body;
     const targetId = targetUserId || db.users[userId]?.partnerId;
-    
+
     if (!targetId) {
-        return res.status(400).json({ 
+        return res.status(400).json({
             success: false,
-            error: 'No target user specified. Please provide a targetUserId or have a partner connected.' 
+            error: 'No target user specified. Please provide a targetUserId or have a partner connected.'
         });
     }
 
     if (targetId === userId) {
-        return res.status(400).json({ 
+        return res.status(400).json({
             success: false,
-            error: 'You cannot invite yourself!' 
+            error: 'You cannot invite yourself!'
         });
     }
 
     const targetUser = db.users[targetId];
     if (!targetUser) {
-        return res.status(404).json({ 
+        return res.status(404).json({
             success: false,
-            error: 'User not found. Please check the User ID.' 
+            error: 'User not found. Please check the User ID.'
         });
     }
 
     const user = db.users[userId];
-    
+
     // Notify target via WebSocket if they're connected
     const targetConnection = playgroundConnections.get(targetId);
     if (targetConnection) {
@@ -581,284 +601,433 @@ app.post('/api/playground/invite', authenticate, (req, res) => {
         }
         saveDB();
     }
-    
-    res.json({ 
+
+    res.json({
         success: true,
         message: `Invitation sent to ${targetUser.username}! 💌`
     });
 });
 
-// --- SOCKET.IO PLAYGROUND MULTIPLAYER ---
+// --- SOCKET.IO PLAYGROUND MULTIPLAYER (PROXIMITY-BASED PRIVATE CHAT) ---
 io.use((socket, next) => {
-    // Authenticate Socket.IO connections using token from handshake
     const token = socket.handshake.auth.token;
     if (!token) {
         return next(new Error('Authentication error: No token provided'));
     }
-    
+
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (err) {
             return next(new Error('Authentication error: Invalid token'));
         }
-        socket.userId = decoded.userId;
+        socket.oderId = decoded.userId;
         next();
     });
 });
 
+// Helper: Get all players data for initial state
+function getAllPlayersData() {
+    const players = [];
+    playgroundConnections.forEach((data) => {
+        players.push({
+            oderId: data.oderId,
+            username: data.username,
+            gender: data.gender,
+            color: data.color || '#00ff88',
+            x: data.x,
+            y: data.y,
+            direction: data.direction || 'down',
+            isMoving: false
+        });
+    });
+    return players;
+}
+
+// Helper: Calculate distance between two players
+function getDistance(player1, player2) {
+    const dx = player1.x - player2.x;
+    const dy = player1.y - player2.y;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+// Helper: Get nearby players for a given player
+function getNearbyPlayers(oderId) {
+    const player = playgroundConnections.get(oderId);
+    if (!player) return [];
+
+    const nearby = [];
+    playgroundConnections.forEach((other, otherId) => {
+        if (otherId !== oderId) {
+            const distance = getDistance(player, other);
+            if (distance <= PROXIMITY_RADIUS) {
+                nearby.push({
+                    oderId: other.oderId,
+                    username: other.username,
+                    distance: Math.round(distance)
+                });
+            }
+        }
+    });
+    return nearby;
+}
+
+// Helper: Generate unique room ID
+function generateRoomId(oderId1, oderId2) {
+    const sorted = [oderId1, oderId2].sort();
+    return `private_${sorted[0]}_${sorted[1]}_${Date.now()}`;
+}
+
+// Helper: Find existing room between two players
+function findExistingRoom(oderId1, oderId2) {
+    for (const [roomId, room] of privateRooms) {
+        if (room.members.includes(oderId1) && room.members.includes(oderId2)) {
+            return roomId;
+        }
+    }
+    return null;
+}
+
+// Avatar colors for random assignment
+const AVATAR_COLORS = ['#00ff88', '#ff6b6b', '#4ecdc4', '#ffe66d', '#a855f7', '#f472b6', '#60a5fa', '#fb923c'];
+
 io.on('connection', (socket) => {
-    const userId = socket.userId;
-    const user = db.users[userId];
-    
+    const oderId = socket.oderId;
+    const user = db.users[oderId];
+
     if (!user) {
         socket.disconnect();
         return;
     }
-    
-    console.log(`[Playground] User ${user.username} (${userId}) connected to playground`);
-    
-    // Check if someone invited this user to the playground
-    if (db.playground[userId]?.invitingPartner) {
-        const inviterId = db.playground[userId].invitingPartner;
-        const inviter = db.users[inviterId];
-        const inviterConnection = playgroundConnections.get(inviterId);
-        
-        if (inviter) {
-            // Notify the newly joined user about the invitation
-            socket.emit('playground:invite', {
-                fromId: inviterId,
-                fromName: inviter.username
-            });
-            
-            // If inviter is in playground, notify them that the user joined
-            if (inviterConnection) {
-                io.to(inviterConnection.socketId).emit('playground:inviteAccepted', {
-                    userId: userId,
-                    username: user.username
-                });
-            }
-            
-            // Clear the invitation flag
-            db.playground[userId].invitingPartner = null;
-            saveDB();
-        }
-    }
-    
-    // Store connection
-    playgroundConnections.set(userId, {
+
+    console.log(`[Playground] User ${user.username} (${oderId}) connected`);
+
+    // Assign random spawn position and color
+    const spawnX = 500 + Math.random() * 2000;
+    const spawnY = 500 + Math.random() * 1000;
+    const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+
+    // Store connection with full player data
+    const playerData = {
         socketId: socket.id,
-        userId: userId,
+        oderId: oderId,
         username: user.username,
-        partnerId: user.partnerId,
-        room: `playground_${userId}_${user.partnerId || 'solo'}`
+        gender: user.gender,
+        color: color,
+        x: spawnX,
+        y: spawnY,
+        direction: 'down',
+        isMoving: false,
+        currentRoom: null // Track current private chat room
+    };
+    playgroundConnections.set(oderId, playerData);
+
+    // Join the global playground room (for position updates only)
+    socket.join('playground:global');
+
+    // Send current world state to the new player
+    socket.emit('playground:init', {
+        oderId: oderId,
+        players: getAllPlayersData()
+        // NO chatHistory - no global chat!
     });
-    
-    // Join a room with partner if they exist
-    if (user.partnerId) {
-        const partnerConnection = playgroundConnections.get(user.partnerId);
-        if (partnerConnection) {
-            // Both players join the same room
-            const roomName = `playground_${userId < user.partnerId ? userId : user.partnerId}_${userId < user.partnerId ? user.partnerId : userId}`;
-            socket.join(roomName);
-            
-            // Make sure partner is also in the room (update their connection)
-            io.sockets.sockets.get(partnerConnection.socketId)?.join(roomName);
-            
-            // Update both connection info
-            partnerConnection.room = roomName;
-            playgroundConnections.set(user.partnerId, partnerConnection);
-            
-            const currentConnection = playgroundConnections.get(userId);
-            if (currentConnection) {
-                currentConnection.room = roomName;
-                playgroundConnections.set(userId, currentConnection);
-            }
-            
-            // Notify partner that user joined
-            io.to(partnerConnection.socketId).emit('playground:partnerJoined', {
-                userId: userId,
-                username: user.username,
-                gender: user.gender
-            });
-            
-            // Send partner info to newly joined user
-            socket.emit('playground:partnerJoined', {
-                userId: user.partnerId,
-                username: partnerConnection.username,
-                gender: db.users[user.partnerId]?.gender
-            });
-            
-            // Send current positions to each other
-            if (db.playground[user.partnerId]) {
-                socket.emit('playground:position', {
-                    userId: user.partnerId,
-                    x: db.playground[user.partnerId].x,
-                    y: db.playground[user.partnerId].y
-                });
-            }
-            if (db.playground[userId]) {
-                io.to(partnerConnection.socketId).emit('playground:position', {
-                    userId: userId,
-                    x: db.playground[userId].x,
-                    y: db.playground[userId].y
-                });
-            }
-        } else {
-            // Partner not in playground yet - check if they join later
-            socket.join(`playground_waiting_${userId}`);
-            
-            // When partner joins later, handle it in their connection handler
-            // This is handled by checking for existing waiting connections
-        }
-    } else {
-        socket.join(`playground_solo_${userId}`);
-    }
-    
-    // Check if partner was waiting for this user
-    if (user.partnerId) {
-        const waitingPartnerConnection = playgroundConnections.get(user.partnerId);
-        if (waitingPartnerConnection && waitingPartnerConnection.room?.includes('waiting')) {
-            // Partner was waiting, now both are connected
-            const waitingSocket = io.sockets.sockets.get(waitingPartnerConnection.socketId);
-            if (waitingSocket) {
-                const roomName = `playground_${userId < user.partnerId ? userId : user.partnerId}_${userId < user.partnerId ? user.partnerId : userId}`;
-                
-                // Leave waiting room and join together room
-                socket.join(roomName);
-                waitingSocket.join(roomName);
-                waitingSocket.leave(`playground_waiting_${user.partnerId}`);
-                
-                // Update connection info
-                waitingPartnerConnection.room = roomName;
-                playgroundConnections.set(user.partnerId, waitingPartnerConnection);
-                
-                const currentConnection = playgroundConnections.get(userId);
-                if (currentConnection) {
-                    currentConnection.room = roomName;
-                    playgroundConnections.set(userId, currentConnection);
-                }
-                
-                // Notify both users
-                socket.emit('playground:partnerJoined', {
-                    userId: user.partnerId,
-                    username: waitingPartnerConnection.username,
-                    gender: db.users[user.partnerId]?.gender
-                });
-                waitingSocket.emit('playground:partnerJoined', {
-                    userId: userId,
-                    username: user.username,
-                    gender: user.gender
-                });
-                
-                // Send positions to each other
-                if (db.playground[user.partnerId]) {
-                    socket.emit('playground:position', {
-                        userId: user.partnerId,
-                        x: db.playground[user.partnerId].x,
-                        y: db.playground[user.partnerId].y
-                    });
-                }
-                if (db.playground[userId]) {
-                    waitingSocket.emit('playground:position', {
-                        userId: userId,
-                        x: db.playground[userId].x,
-                        y: db.playground[userId].y
-                    });
-                }
-            }
-        }
-    }
-    
-    // Handle position updates
+
+    // Notify ALL other players about the new player
+    socket.to('playground:global').emit('playground:playerJoined', {
+        player: playerData,
+        message: `${user.username} joined the playground! 🎮`
+    });
+
+    // ============ POSITION UPDATES ============
     socket.on('playground:move', (data) => {
-        const { x, y } = data;
-        
-        // Update local storage
-        if (!db.playground[userId]) {
-            db.playground[userId] = { x: 400, y: 550, sprite: 'idle', lastUpdate: Date.now() };
+        const { x, y, direction, isMoving } = data;
+
+        // Update stored position
+        const connection = playgroundConnections.get(oderId);
+        if (connection) {
+            connection.x = x;
+            connection.y = y;
+            connection.direction = direction || connection.direction;
+            connection.isMoving = isMoving || false;
+            playgroundConnections.set(oderId, connection);
         }
-        db.playground[userId].x = x;
-        db.playground[userId].y = y;
-        db.playground[userId].lastUpdate = Date.now();
-        
-        // Broadcast to partner
-        if (user.partnerId) {
-            const partnerConnection = playgroundConnections.get(user.partnerId);
-            if (partnerConnection) {
-                io.to(partnerConnection.socketId).emit('playground:position', {
-                    userId: userId,
-                    x: x,
-                    y: y
+
+        // Broadcast position to ALL players
+        socket.to('playground:global').emit('playground:playerMoved', {
+            oderId: oderId,
+            x: x,
+            y: y,
+            direction: direction,
+            isMoving: isMoving
+        });
+
+        // Check and notify about nearby players (for chat eligibility)
+        const nearby = getNearbyPlayers(oderId);
+        socket.emit('playground:nearbyPlayers', { nearby });
+    });
+
+    // ============ PRIVATE CHAT INVITE ============
+    socket.on('playground:chatInvite', (data) => {
+        const targetId = data?.targetId;
+        if (!targetId) return;
+
+        const targetConnection = playgroundConnections.get(targetId);
+        if (!targetConnection) {
+            socket.emit('playground:error', { message: 'Player not found' });
+            return;
+        }
+
+        // Check if players are within proximity
+        const myConnection = playgroundConnections.get(oderId);
+        const distance = getDistance(myConnection, targetConnection);
+
+        if (distance > PROXIMITY_RADIUS) {
+            socket.emit('playground:error', { message: 'Player is too far away to chat' });
+            return;
+        }
+
+        // Check if already in a room together
+        const existingRoom = findExistingRoom(oderId, targetId);
+        if (existingRoom) {
+            socket.emit('playground:error', { message: 'Already chatting with this player' });
+            return;
+        }
+
+        // Store pending invite
+        const inviteKey = `${oderId}_${targetId}`;
+        pendingInvites.set(inviteKey, {
+            fromId: oderId,
+            toId: targetId,
+            fromUsername: user.username,
+            fromColor: myConnection.color,
+            timestamp: Date.now()
+        });
+
+        console.log(`[Chat Invite] ${user.username} -> ${targetConnection.username}`);
+
+        // Send invite ONLY to target player's socket
+        io.to(targetConnection.socketId).emit('playground:chatInviteReceived', {
+            fromId: oderId,
+            fromUsername: user.username,
+            fromColor: myConnection.color
+        });
+
+        socket.emit('playground:chatInviteSent', {
+            toId: targetId,
+            toUsername: targetConnection.username
+        });
+    });
+
+    // ============ ACCEPT INVITE ============
+    socket.on('playground:chatInviteAccept', (data) => {
+        const fromId = data?.fromId;
+        if (!fromId) return;
+
+        const inviteKey = `${fromId}_${oderId}`;
+        const invite = pendingInvites.get(inviteKey);
+
+        if (!invite) {
+            socket.emit('playground:error', { message: 'Invite expired or not found' });
+            return;
+        }
+
+        const fromConnection = playgroundConnections.get(fromId);
+        if (!fromConnection) {
+            pendingInvites.delete(inviteKey);
+            socket.emit('playground:error', { message: 'Player left the playground' });
+            return;
+        }
+
+        // Create private room
+        const roomId = generateRoomId(oderId, fromId);
+        privateRooms.set(roomId, {
+            members: [oderId, fromId],
+            messages: [],
+            createdAt: Date.now()
+        });
+
+        // Update player data with current room
+        const myConnection = playgroundConnections.get(oderId);
+        if (myConnection) {
+            myConnection.currentRoom = roomId;
+            playgroundConnections.set(oderId, myConnection);
+        }
+        fromConnection.currentRoom = roomId;
+        playgroundConnections.set(fromId, fromConnection);
+
+        // Both players join the private room
+        socket.join(roomId);
+        const fromSocket = io.sockets.sockets.get(fromConnection.socketId);
+        if (fromSocket) {
+            fromSocket.join(roomId);
+        }
+
+        // Remove pending invite
+        pendingInvites.delete(inviteKey);
+
+        console.log(`[Chat Room] Created ${roomId} for ${user.username} & ${fromConnection.username}`);
+
+        // Notify both players
+        socket.emit('playground:chatRoomJoined', {
+            roomId: roomId,
+            partnerId: fromId,
+            partnerUsername: fromConnection.username,
+            partnerColor: fromConnection.color
+        });
+
+        io.to(fromConnection.socketId).emit('playground:chatRoomJoined', {
+            roomId: roomId,
+            partnerId: oderId,
+            partnerUsername: user.username,
+            partnerColor: myConnection?.color || color
+        });
+    });
+
+    // ============ DECLINE INVITE ============
+    socket.on('playground:chatInviteDecline', (data) => {
+        const fromId = data?.fromId;
+        if (!fromId) return;
+
+        const inviteKey = `${fromId}_${oderId}`;
+        const invite = pendingInvites.get(inviteKey);
+
+        if (invite) {
+            pendingInvites.delete(inviteKey);
+
+            const fromConnection = playgroundConnections.get(fromId);
+            if (fromConnection) {
+                io.to(fromConnection.socketId).emit('playground:chatInviteDeclined', {
+                    byId: oderId,
+                    byUsername: user.username
                 });
             }
         }
     });
-    
-    // Handle playground invite via WebSocket
-    socket.on('playground:invite', (data) => {
-        const targetUserId = data?.targetUserId || user.partnerId;
-        
-        if (!targetUserId) {
-            socket.emit('playground:inviteError', {
-                message: 'No target user specified. Please provide a User ID or have a partner connected.'
-            });
+
+    // ============ PRIVATE CHAT MESSAGE ============
+    socket.on('playground:privateMessage', (data) => {
+        const { roomId, message } = data;
+        if (!roomId || !message) return;
+
+        const room = privateRooms.get(roomId);
+        if (!room) {
+            socket.emit('playground:error', { message: 'Chat room not found' });
             return;
         }
 
-        if (targetUserId === userId) {
-            socket.emit('playground:inviteError', {
-                message: 'You cannot invite yourself!'
-            });
+        // Security: Verify sender is a member of the room
+        if (!room.members.includes(oderId)) {
+            socket.emit('playground:error', { message: 'Access denied' });
             return;
         }
 
-        const targetUser = db.users[targetUserId];
-        if (!targetUser) {
-            socket.emit('playground:inviteError', {
-                message: 'User not found. Please check the User ID.'
-            });
-            return;
+        const sanitizedMessage = message.trim().substring(0, 200);
+        if (!sanitizedMessage) return;
+
+        const myConnection = playgroundConnections.get(oderId);
+
+        const msgData = {
+            roomId: roomId,
+            fromId: oderId,
+            fromUsername: user.username,
+            fromColor: myConnection?.color || '#ffffff',
+            message: sanitizedMessage,
+            timestamp: Date.now()
+        };
+
+        // Store in room history (ephemeral)
+        room.messages.push(msgData);
+        if (room.messages.length > 100) {
+            room.messages.shift();
         }
 
-        const targetConnection = playgroundConnections.get(targetUserId);
-        if (targetConnection) {
-            // User is in playground, send real-time notification
-            io.to(targetConnection.socketId).emit('playground:invite', {
-                fromId: userId,
-                fromName: user.username
-            });
-            socket.emit('playground:inviteSuccess', {
-                message: `Invitation sent to ${targetUser.username}! 💌`
-            });
-        } else {
-            // User not in playground, store invite flag for when they join
-            if (!db.playground[targetUserId]) {
-                db.playground[targetUserId] = { x: 400, y: 300, sprite: 'idle', lastUpdate: Date.now(), invitingPartner: userId };
-            } else {
-                db.playground[targetUserId].invitingPartner = userId;
-            }
-            saveDB();
-            socket.emit('playground:inviteSuccess', {
-                message: `Invitation sent to ${targetUser.username}! They will be notified when they join the playground. 💌`
-            });
-        }
+        console.log(`[Private Chat] ${user.username}: ${sanitizedMessage}`);
+
+        // Send ONLY to room members
+        io.to(roomId).emit('playground:privateMessageReceived', msgData);
     });
-    
-    // Handle disconnect
+
+    // ============ LEAVE PRIVATE CHAT ============
+    socket.on('playground:leaveChat', (data) => {
+        const { roomId } = data;
+        if (!roomId) return;
+
+        const room = privateRooms.get(roomId);
+        if (!room) return;
+
+        // Remove player from room
+        socket.leave(roomId);
+
+        const myConnection = playgroundConnections.get(oderId);
+        if (myConnection) {
+            myConnection.currentRoom = null;
+            playgroundConnections.set(oderId, myConnection);
+        }
+
+        // Notify other room member
+        const otherMemberId = room.members.find(id => id !== oderId);
+        if (otherMemberId) {
+            const otherConnection = playgroundConnections.get(otherMemberId);
+            if (otherConnection) {
+                io.to(otherConnection.socketId).emit('playground:chatRoomClosed', {
+                    roomId: roomId,
+                    reason: `${user.username} left the chat`
+                });
+
+                otherConnection.currentRoom = null;
+                playgroundConnections.set(otherMemberId, otherConnection);
+
+                const otherSocket = io.sockets.sockets.get(otherConnection.socketId);
+                if (otherSocket) {
+                    otherSocket.leave(roomId);
+                }
+            }
+        }
+
+        // Delete room (messages are ephemeral)
+        privateRooms.delete(roomId);
+        console.log(`[Chat Room] Closed ${roomId}`);
+    });
+
+    // ============ DISCONNECT ============
     socket.on('disconnect', () => {
-        console.log(`[Playground] User ${user.username} (${userId}) disconnected from playground`);
-        
-        // Notify partner
-        if (user.partnerId) {
-            const partnerConnection = playgroundConnections.get(user.partnerId);
-            if (partnerConnection) {
-                io.to(partnerConnection.socketId).emit('playground:partnerLeft', {
-                    userId: userId
-                });
+        console.log(`[Playground] User ${user.username} (${oderId}) left`);
+
+        const connection = playgroundConnections.get(oderId);
+
+        // Clean up any private room the player was in
+        if (connection?.currentRoom) {
+            const room = privateRooms.get(connection.currentRoom);
+            if (room) {
+                const otherMemberId = room.members.find(id => id !== oderId);
+                if (otherMemberId) {
+                    const otherConnection = playgroundConnections.get(otherMemberId);
+                    if (otherConnection) {
+                        io.to(otherConnection.socketId).emit('playground:chatRoomClosed', {
+                            roomId: connection.currentRoom,
+                            reason: `${user.username} disconnected`
+                        });
+                        otherConnection.currentRoom = null;
+                        playgroundConnections.set(otherMemberId, otherConnection);
+                    }
+                }
+                privateRooms.delete(connection.currentRoom);
             }
         }
-        
-        // Clean up
-        playgroundConnections.delete(userId);
+
+        // Clean up pending invites from this user
+        for (const [key, invite] of pendingInvites) {
+            if (invite.fromId === oderId || invite.toId === oderId) {
+                pendingInvites.delete(key);
+            }
+        }
+
+        // Notify ALL remaining players
+        socket.to('playground:global').emit('playground:playerLeft', {
+            oderId: oderId,
+            username: user.username,
+            message: `${user.username} left the playground`
+        });
+
+        playgroundConnections.delete(oderId);
     });
 });
 

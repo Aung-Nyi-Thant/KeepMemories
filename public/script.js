@@ -57,24 +57,43 @@ document.addEventListener('DOMContentLoaded', () => {
     let isLoginMode = true;
     const toggleLink = document.getElementById('toggleMode');
     const submitBtn = loginForm.querySelector('.login-btn');
+    const headerTitle = document.querySelector('.card-header h1');
     const headerMsg = document.querySelector('.card-header p');
     const genderGroup = document.getElementById('genderGroup');
+    const genderInput = document.getElementById('genderSelect');
+    const genderOptions = document.querySelectorAll('.gender-option');
+
+    // Gender Bar Logic
+    genderOptions.forEach(btn => {
+        btn.addEventListener('click', () => {
+            genderOptions.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            genderInput.value = btn.dataset.value;
+        });
+    });
 
     toggleLink.addEventListener('click', (e) => {
         e.preventDefault();
         isLoginMode = !isLoginMode;
+
+        // Reset inputs when switching
+        genderInput.value = '';
+        genderOptions.forEach(b => b.classList.remove('active'));
+
         if (isLoginMode) {
             headerTitle.textContent = "Welcome Back!";
             headerMsg.innerHTML = "We missed you &#10084;";
             submitBtn.innerText = "Let me in!";
             toggleLink.innerText = "Create an account";
             genderGroup.style.display = 'none';
+            document.querySelector('.login-card').classList.remove('register-mode');
         } else {
-            headerTitle.textContent = "Join Us!";
-            headerMsg.innerHTML = "Start keeping memories &#10084;";
+            headerTitle.textContent = "Create Account";
+            headerMsg.innerHTML = "Join our wholesome community ✨";
             submitBtn.innerText = "Sign Up";
             toggleLink.innerText = "Already have an account?";
             genderGroup.style.display = 'block';
+            document.querySelector('.login-card').classList.add('register-mode');
         }
     });
 

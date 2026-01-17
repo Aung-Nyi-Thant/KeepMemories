@@ -33,14 +33,12 @@
                 </div>
 
                 <div class="input-group" id="genderGroup" style="display: none;">
-                    <label for="gender">Gender</label>
-                    <select id="genderSelect"
-                        style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; outline: none; font-family: inherit;">
-                        <option value="" disabled selected>Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </select>
+                    <label>Gender</label>
+                    <div class="gender-bar">
+                        <button type="button" class="gender-option" data-value="Male">Male</button>
+                        <button type="button" class="gender-option" data-value="Female">Female</button>
+                    </div>
+                    <input type="hidden" id="genderSelect" value="">
                 </div>
 
                 <div class="actions">

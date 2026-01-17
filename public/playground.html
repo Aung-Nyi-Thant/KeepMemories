@@ -104,34 +104,397 @@
             background: white;
         }
 
-        /* Partner Status */
-        #partner-status {
+        /* Online Players Count */
+        #online-count {
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
             color: white;
             padding: 10px 20px;
             border-radius: 20px;
             font-family: var(--font-main);
             font-size: 0.9rem;
             backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .status-dot {
-            display: inline-block;
+        #online-count .dot {
             width: 8px;
             height: 8px;
+            background: #4cd137;
             border-radius: 50%;
-            margin-right: 8px;
+            animation: pulse 2s infinite;
         }
 
-        .status-dot.online {
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Nearby Players Indicator */
+        #nearby-indicator {
+            position: absolute;
+            bottom: 180px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-family: var(--font-main);
+            font-size: 0.85rem;
+            backdrop-filter: blur(8px);
+            pointer-events: auto;
+            display: none;
+        }
+
+        #nearby-indicator.visible {
+            display: block;
+        }
+
+        .nearby-player {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nearby-player:last-child {
+            border-bottom: none;
+        }
+
+        .nearby-player .name {
+            font-weight: 500;
+        }
+
+        .chat-invite-btn {
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .chat-invite-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.4);
+        }
+
+        /* Floating Chat Invite Card (Glassmorphism) */
+        #invite-card {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 320px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 28px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.35s ease-out;
+        }
+
+        #invite-card.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+
+        #invite-card .invite-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        #invite-card h3 {
+            color: white;
+            font-family: var(--font-main);
+            font-size: 1.3rem;
+            text-align: center;
+            margin: 0 0 8px 0;
+        }
+
+        #invite-card .invite-from {
+            text-align: center;
+            font-size: 1rem;
+            margin-bottom: 24px;
+        }
+
+        #invite-card .invite-from span {
+            font-weight: 700;
+        }
+
+        #invite-card .invite-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        #invite-card .btn-accept {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #4cd137, #44bd32);
+            color: white;
+            font-family: var(--font-main);
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #invite-card .btn-accept:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 209, 55, 0.4);
+        }
+
+        #invite-card .btn-decline {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.8);
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #invite-card .btn-decline:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Private Chat Modal */
+        #private-chat-modal {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 340px;
+            max-height: 380px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            pointer-events: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        #private-chat-modal.visible {
+            display: flex;
+        }
+
+        #private-chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #private-chat-header .partner-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #private-chat-header .partner-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
             background: #4cd137;
         }
 
-        .status-dot.offline {
-            background: #ff4757;
+        #private-chat-header .partner-name {
+            color: white;
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        #private-chat-close {
+            background: rgba(255, 75, 75, 0.2);
+            border: none;
+            color: #ff4b4b;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #private-chat-close:hover {
+            background: rgba(255, 75, 75, 0.4);
+        }
+
+        #private-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 220px;
+        }
+
+        .private-msg {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: white;
+        }
+
+        .private-msg.mine {
+            background: linear-gradient(135deg, rgba(255, 107, 157, 0.3), rgba(196, 69, 105, 0.3));
+            margin-left: 20%;
+        }
+
+        .private-msg.theirs {
+            margin-right: 20%;
+        }
+
+        .private-msg .sender {
+            font-weight: 600;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        #private-chat-form {
+            display: flex;
+            padding: 12px;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        #private-chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+        }
+
+        #private-chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        #private-chat-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        #private-chat-send {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            color: white;
+            font-family: var(--font-main);
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        #private-chat-send:hover {
+            transform: scale(1.05);
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .toast {
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 20px;
+            font-family: var(--font-main);
+            font-size: 0.85rem;
+            backdrop-filter: blur(5px);
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+        }
+
+        .toast.join {
+            border-left: 3px solid #4cd137;
+        }
+
+        .toast.leave {
+            border-left: 3px solid #ff4757;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            #private-chat-modal {
+                width: calc(100% - 40px);
+                right: 20px;
+                left: 20px;
+            }
+
+            #invite-card {
+                width: calc(100% - 60px);
+            }
         }
 
         /* Invite Modal */
@@ -226,6 +589,32 @@
             }
         }
 
+        @keyframes vibrate {
+            0% {
+                transform: translate(-50%, -50%) scale(0.9) rotate(0deg);
+            }
+
+            25% {
+                transform: translate(-50%, -50%) scale(0.9) rotate(2deg);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(0.9) rotate(0deg);
+            }
+
+            75% {
+                transform: translate(-50%, -50%) scale(0.9) rotate(-2deg);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(0.9) rotate(0deg);
+            }
+        }
+
+        .vibrate {
+            animation: vibrate 0.3s linear infinite;
+        }
+
         .fade-in {
             animation: fadeIn 0.5s ease-out;
         }
@@ -243,13 +632,52 @@
             <button id="inviteBtn" class="game-btn">📩 Invite by ID</button>
         </div>
 
-        <div id="partner-status">
-            <span id="statusDot" class="status-dot offline"></span>
-            <span id="statusText">Partner Offline</span>
+        <div id="online-count">
+            <span class="dot"></span>
+            <span id="player-count">0</span> players online
         </div>
 
         <div class="joystick-container" id="joystick">
             <div class="joystick-knob" id="knob"></div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container"></div>
+
+        <!-- Nearby Players Indicator -->
+        <div id="nearby-indicator">
+            <div style="font-weight: 600; margin-bottom: 8px;">👥 Nearby Players</div>
+            <div id="nearby-list"></div>
+        </div>
+
+        <!-- Private Chat Modal -->
+        <div id="private-chat-modal">
+            <div id="private-chat-header">
+                <div class="partner-info">
+                    <span class="partner-dot"></span>
+                    <span class="partner-name" id="chat-partner-name">Partner</span>
+                </div>
+                <button id="private-chat-close">✕</button>
+            </div>
+            <div id="private-chat-messages"></div>
+            <form id="private-chat-form">
+                <input type="text" id="private-chat-input" placeholder="Type a message..." maxlength="200"
+                    autocomplete="off">
+                <button type="submit" id="private-chat-send">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Floating Chat Invite Card -->
+    <div id="invite-card">
+        <div class="invite-icon">💬</div>
+        <h3>Chat Invite</h3>
+        <div class="invite-from">
+            <span id="invite-from-name">Someone</span> wants to chat!
+        </div>
+        <div class="invite-buttons">
+            <button class="btn-accept" id="accept-invite-btn">Accept</button>
+            <button class="btn-decline" id="decline-invite-btn">Decline</button>
         </div>
     </div>
     </div>
@@ -258,7 +686,8 @@
     <div id="inviteModal" class="invite-modal">
         <div class="invite-modal-content">
             <h3>📩 Invite to Playground</h3>
-            <p style="color: #666; font-size: 14px; margin: 0 0 10px 0;">Enter the User ID of the person you want to invite:</p>
+            <p style="color: #666; font-size: 14px; margin: 0 0 10px 0;">Enter the User ID of the person you want to
+                invite:</p>
             <input type="text" id="inviteUserIdInput" placeholder="Enter User ID (e.g., 9X2A1M)" autocomplete="off">
             <div class="invite-modal-buttons">
                 <button class="btn-secondary" id="cancelInviteBtn">Cancel</button>
